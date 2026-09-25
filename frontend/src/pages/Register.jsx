@@ -141,7 +141,6 @@ function Register() {
             <option value="">Choose your role</option>
             <option value="job_seeker">Job Seeker</option>
             <option value="company">Company</option>
-            <option value="admin">Admin</option>
           </select>
 
           {error && (
@@ -172,7 +171,6 @@ function Register() {
             <option value="">Select your role</option>
             <option value="job_seeker">Job Seeker</option>
             <option value="company">Company</option>
-            <option value="admin">Admin</option>
           </select>
         </div>
 
