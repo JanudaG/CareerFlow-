@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import axios from "axios";
+
 import { Link, useNavigate } from "react-router-dom";
 import "./Register.css";
 
@@ -16,6 +18,9 @@ function Register() {
   const [socialRole, setSocialRole] = useState("");
   const [error, setError] = useState("");
 
+
+  /*this is where i reoved part of the code*/
+
   const handleChange = (event) => {
     setFormData({
       ...formData,
@@ -23,35 +28,43 @@ function Register() {
     });
   };
 
-  const handleRegister = (event) => {
+  const handleRegister = async (event) => {
     event.preventDefault();
-    setError("");
+  setError("");
 
-    if (
-      formData.password !== formData.confirmPassword
-    ) {
-      setError("Passwords do not match.");
-      return;
-    }
+  if (formData.password !== formData.confirmPassword) {
+    setError("Passwords do not match.");
+    return;
+  }
 
-    if (!formData.role) {
-      setError("Please select your role.");
-      return;
-    }
+  if (!formData.role) {
+    setError("Please select your role.");
+    return;
+  }
 
-    const userData = {
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      role: formData.role
-    };
-
-    localStorage.setItem(
-      "careerflowUser",
-      JSON.stringify(userData)
+  try {
+    const response = await axios.post(
+      "http://localhost:5000/api/auth/register",
+      {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role
+      }
     );
 
+    alert(response.data.message);
+
     navigate("/login");
+
+  } catch (error) {
+
+    setError(
+      error.response?.data?.message ||
+      "Registration failed"
+    );
+
+  }
   };
 
   const handleSocialRegister = (provider) => {
@@ -139,8 +152,8 @@ function Register() {
             required
           >
             <option value="">Choose your role</option>
-            <option value="job_seeker">Job Seeker</option>
-            <option value="company">Company</option>
+            <option value="jobseeker">Job Seeker</option>
+            <option value="employer">Company</option>
           </select>
 
           {error && (
@@ -169,8 +182,8 @@ function Register() {
             onChange={(event) => setSocialRole(event.target.value)}
           >
             <option value="">Select your role</option>
-            <option value="job_seeker">Job Seeker</option>
-            <option value="company">Company</option>
+            <option value="jobseeker">Job Seeker</option>
+            <option value="employer">Company</option>
           </select>
         </div>
 

@@ -7,12 +7,14 @@ const jobRoutes = require("./Routes/jobRoutes");
 
 const app = express();
 
+app.use(cors());
 app.use(express.json());
+
+
 app.use("/api/auth", authRoutes);
 app.use("/api/jobs", jobRoutes);
 
-app.use(cors());
-app.use(express.json());
+
 
 mongoose
   .connect(process.env.MONGO_URI)

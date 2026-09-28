@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import "./Login.css";
 
@@ -10,30 +11,57 @@ function Login() {
   const [role, setRole] = useState("");
   const [error, setError] = useState("");
 
-  const handleLogin = (event) => {
+  
+  const handleLogin = async (event) => {
     event.preventDefault();
     setError("");
+   try {
 
-    const savedUser = JSON.parse(
-      localStorage.getItem("careerflowUser")
+    const response = await axios.post(
+      "http://localhost:5000/api/auth/login",
+      {
+        email,
+        password
+      }
     );
 
-    if (
-      !savedUser ||
-      savedUser.email !== email ||
-      savedUser.password !== password
-    ) {
-      setError("Invalid email or password.");
-      return;
+
+    // Save JWT token
+    localStorage.setItem(
+      "token",
+      response.data.token
+    );
+
+
+    // Save user information
+    localStorage.setItem(
+      "user",
+      JSON.stringify(response.data.user)
+    );
+
+
+    const user = response.data.user;
+
+
+    if (user.role === "jobseeker") {
+      navigate("/jobseeker");
+    } 
+    
+    else if (user.role === "employer") {
+      navigate("/company");
     }
 
-    if (savedUser.role === "job_seeker") {
-      navigate("/job-seeker");
-    } else if (savedUser.role === "company") {
-      navigate("/company");
-    } else if (savedUser.role === "admin") {
-      navigate("/admin");
-    }
+
+  } catch (error) {
+
+    setError(
+      error.response?.data?.message ||
+      "Login failed"
+    );
+
+   }
+    
+    
   };
 
   const handleSocialLogin = (provider) => {
@@ -113,8 +141,8 @@ function Login() {
           >
             <option value="">Select your role</option>
 
-            <option value="job_seeker">Job Seeker</option>
-            <option value="company">Company</option>
+            <option value="jobseeker">Job Seeker</option>
+            <option value="employer">Company</option>
           </select>
         </div>
 
@@ -144,6 +172,7 @@ function Login() {
       </div>
     </div>
   );
+
 }
 
 export default Login;
