@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import { api } from "../lib/api";
 import { Link, useNavigate } from "react-router-dom";
 import "./Login.css";
 
@@ -44,7 +44,7 @@ function Login() {
 
 
     if (user.role === "jobseeker") {
-      navigate("/jobseeker");
+      navigate("/job-seeker");
     } 
     
     else if (user.role === "employer") {
