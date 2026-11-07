@@ -1,4 +1,3 @@
-
 const express = require("express");
 const mongoose = require("mongoose");
 const Job = require("../models/Job");
@@ -16,9 +15,13 @@ const parseSkills = (value) => {
       ? value.split(/[\n,]/)
       : [];
 
-  return [...new Set(
-    items.map((x) => String(x).trim()).filter(Boolean)
-  )].slice(0, 30);
+  return [
+    ...new Set(
+      items
+        .map((x) => String(x).trim())
+        .filter(Boolean)
+    ),
+  ].slice(0, 30);
 };
 
 const escapeRegex = (value) =>
@@ -28,7 +31,10 @@ function validateJob(body, creating = false) {
   const errors = [];
 
   if (creating || body.title !== undefined) {
-    if (typeof body.title !== "string" || !body.title.trim()) {
+    if (
+      typeof body.title !== "string" ||
+      !body.title.trim()
+    ) {
       errors.push("Title is required.");
     }
   }
@@ -42,10 +48,13 @@ function validateJob(body, creating = false) {
     }
   }
 
-  if (body.minimumGpa !== undefined &&
-      body.minimumGpa !== null &&
-      body.minimumGpa !== "") {
+  if (
+    body.minimumGpa !== undefined &&
+    body.minimumGpa !== null &&
+    body.minimumGpa !== ""
+  ) {
     const gpa = Number(body.minimumGpa);
+
     if (!Number.isFinite(gpa) || gpa < 0 || gpa > 4) {
       errors.push("Minimum GPA must be between 0 and 4.");
     }
@@ -53,18 +62,22 @@ function validateJob(body, creating = false) {
 
   if (body.openings !== undefined) {
     const n = Number(body.openings);
+
     if (!Number.isInteger(n) || n < 1) {
       errors.push("Openings must be a positive integer.");
     }
   }
 
-  if (body.status !== undefined &&
-      !["open", "closed"].includes(body.status)) {
+  if (
+    body.status !== undefined &&
+    !["open", "closed"].includes(body.status)
+  ) {
     errors.push("Invalid job status.");
   }
 
   if (body.closingDate) {
     const date = new Date(body.closingDate);
+
     if (Number.isNaN(date.getTime())) {
       errors.push("Invalid closing date.");
     }
@@ -75,6 +88,7 @@ function validateJob(body, creating = false) {
 
 function jobPayload(body) {
   const result = {};
+
   const strings = [
     "title",
     "description",
@@ -89,6 +103,7 @@ function jobPayload(body) {
       if (typeof body[key] !== "string") {
         throw new Error(`${key} must be a string.`);
       }
+
       result[key] = body[key].trim();
     }
   }
@@ -99,7 +114,8 @@ function jobPayload(body) {
 
   if (body.minimumGpa !== undefined) {
     result.minimumGpa =
-      body.minimumGpa === "" || body.minimumGpa === null
+      body.minimumGpa === "" ||
+      body.minimumGpa === null
         ? null
         : Number(body.minimumGpa);
   }
@@ -121,7 +137,6 @@ function jobPayload(body) {
   return result;
 }
 
-// Public job browsing
 router.get("/", async (req, res) => {
   try {
     const filter = {};
@@ -130,10 +145,26 @@ router.get("/", async (req, res) => {
       const search = escapeRegex(
         String(req.query.search).slice(0, 80)
       );
+
       filter.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
-        { requirements: { $regex: search, $options: "i" } },
+        {
+          title: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+        {
+          description: {
+            $regex: search,
+            $options: "i",
+          },
+        },
+        {
+          requirements: {
+            $regex: search,
+            $options: "i",
+          },
+        },
       ];
     }
 
@@ -147,11 +178,14 @@ router.get("/", async (req, res) => {
     }
 
     if (req.query.status) {
-      if (!["open", "closed"].includes(req.query.status)) {
+      if (
+        !["open", "closed"].includes(req.query.status)
+      ) {
         return res.status(400).json({
           message: "Invalid status filter.",
         });
       }
+
       filter.status = req.query.status;
     }
 
@@ -159,13 +193,16 @@ router.get("/", async (req, res) => {
       .populate("postedBy", "name companyName")
       .sort({ createdAt: -1 });
 
-    res.json(jobs);
-  } catch {
-    res.status(500).json({ message: "Could not load jobs." });
+    return res.json(jobs);
+  } catch (error) {
+    console.error("Get jobs error:", error);
+
+    return res.status(500).json({
+      message: "Could not load jobs.",
+    });
   }
 });
 
-// Must be before /:id
 router.get(
   "/mine",
   requireAuth,
@@ -176,9 +213,11 @@ router.get(
         postedBy: req.user._id,
       }).sort({ createdAt: -1 });
 
-      res.json(jobs);
-    } catch {
-      res.status(500).json({
+      return res.json(jobs);
+    } catch (error) {
+      console.error("Get my jobs error:", error);
+
+      return res.status(500).json({
         message: "Could not load your jobs.",
       });
     }
@@ -202,14 +241,15 @@ router.get("/:id", async (req, res) => {
       });
     }
 
-    res.json(job);
-  } catch {
-    res.status(500).json({
+    return res.json(job);
+  } catch (error) {
+    console.error("Get job error:", error);
+
+    return res.status(500).json({
       message: "Could not load job.",
     });
   }
 });
-
 router.post(
   "/",
   requireAuth,
@@ -217,6 +257,7 @@ router.post(
   async (req, res) => {
     try {
       const errors = validateJob(req.body, true);
+
       if (errors.length) {
         return res.status(400).json({
           message: errors.join(" "),
@@ -228,15 +269,17 @@ router.post(
         postedBy: req.user._id,
       });
 
-      res.status(201).json(job);
-    } catch (err) {
-      res.status(400).json({
-        message: err.message || "Could not create job.",
+      return res.status(201).json(job);
+    } catch (error) {
+      console.error("Create job error:", error);
+
+      return res.status(400).json({
+        message:
+          error.message || "Could not create job.",
       });
     }
   }
 );
-
 router.patch(
   "/:id",
   requireAuth,
@@ -250,6 +293,7 @@ router.patch(
       }
 
       const errors = validateJob(req.body);
+
       if (errors.length) {
         return res.status(400).json({
           message: errors.join(" "),
@@ -268,61 +312,73 @@ router.patch(
       }
 
       Object.assign(job, jobPayload(req.body));
+
       await job.save();
 
-      res.json(job);
-    } catch (err) {
-      res.status(400).json({
-        message: err.message || "Could not update job.",
+      return res.json(job);
+    } catch (error) {
+      console.error("Update job error:", error);
+
+      return res.status(400).json({
+        message:
+          error.message || "Could not update job.",
       });
     }
   }
 );
 
-// Delete a job and its applications.
-// Transaction requires MongoDB replica set / Atlas.
+
 router.delete(
   "/:id",
   requireAuth,
   requireRole("employer"),
   async (req, res) => {
-    if (!validId(req.params.id)) {
-      return res.status(400).json({
-        message: "Invalid job ID.",
-      });
-    }
-
     try {
-      await mongoose.connection.transaction(async (session) => {
-        const job = await Job.findOne({
-          _id: req.params.id,
-          postedBy: req.user._id,
-        }).session(session);
+      // Validate job ID
+      if (!validId(req.params.id)) {
+        return res.status(400).json({
+          message: "Invalid job ID.",
+        });
+      }
 
-        if (!job) {
-          const err = new Error("Job not found.");
-          err.status = 404;
-          throw err;
-        }
-
-        await Application.deleteMany(
-          { job: job._id },
-          { session }
-        );
-
-        await Job.deleteOne(
-          { _id: job._id },
-          { session }
-        );
+      // Check job ownership
+      const job = await Job.findOne({
+        _id: req.params.id,
+        postedBy: req.user._id,
       });
 
-      res.json({ message: "Job deleted successfully." });
-    } catch (err) {
-      res.status(err.status || 500).json({
+      if (!job) {
+        return res.status(404).json({
+          message: "Job not found or access denied.",
+        });
+      }
+
+      // Delete associated applications
+      await Application.deleteMany({
+        job: job._id,
+      });
+
+      // Delete the job
+      const result = await Job.deleteOne({
+        _id: job._id,
+        postedBy: req.user._id,
+      });
+
+      if (result.deletedCount !== 1) {
+        return res.status(409).json({
+          message: "Job could not be deleted. Please retry.",
+        });
+      }
+
+      return res.status(200).json({
         message:
-          err.status === 404
-            ? err.message
-            : "Could not delete job. MongoDB transactions require a replica set.",
+          "Job and associated applications deleted successfully.",
+      });
+    } catch (error) {
+      console.error("Delete job error:", error);
+
+      return res.status(500).json({
+        message: "Could not delete job.",
       });
     }
   }

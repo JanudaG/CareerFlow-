@@ -1004,12 +1004,7 @@ export default function Company() {
           </div>
         ))}
       </div>
-
-      <h2>Admin-Approved Candidates</h2>
-      <Empty
-        message="Approved candidates will appear when the admin approval workflow is implemented."
-      />
-
+      
       {showForm && (
         <JobForm
           initial={formJob}

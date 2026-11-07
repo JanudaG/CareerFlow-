@@ -18,7 +18,6 @@ const tabs = [
   "Job Seekers",
   "Jobs",
   "Applications",
-  "Match Reviews",
 ];
 
 export default function Admin() {
@@ -151,9 +150,6 @@ export default function Admin() {
           </div>
         )}
 
-        {tab === "Match Reviews" && (
-          <p>Match approval feature will be added next.</p>
-        )}
       </main>
     </div>
   );
