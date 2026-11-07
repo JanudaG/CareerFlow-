@@ -1,11 +1,7 @@
-
-import "./Dashboard.css";
 import React, {
   useCallback,
   useEffect,
   useState,
-  createContext,
-  useContext,
 } from "react";
 import {
   Briefcase,
@@ -18,104 +14,117 @@ import {
   ChevronLeft,
   ChevronRight,
   MapPin,
+  Users,
+  CheckCircle,
 } from "lucide-react";
-import { api as http, getSession } from "../lib/api.js";
+import { api, getSession } from "../lib/api.js";
+import "./Dashboard.css";
 
-// ================================================
-// SHARED UI
-// ================================================
+const DEGREES = [
+  "Any",
+  "Certificate",
+  "Diploma",
+  "Bachelor",
+  "Master",
+  "PhD",
+];
 
-const ToastContext = createContext(() => {});
+const STAGES = [
+  "submitted",
+  "reviewing",
+  "shortlisted",
+  "interview",
+  "offered",
+  "rejected",
+];
 
-function ToastProvider({ children }) {
-  const [toast, setToast] = useState(null);
+const EMPTY_JOB = {
+  title: "",
+  description: "",
+  location: "",
+  salaryRange: "",
+  requirements: [],
+  preferredField: "",
+  preferredDegree: "Any",
+  minimumGpa: "",
+  openings: 1,
+  closingDate: "",
+  status: "open",
+};
 
-  const notify = useCallback((message, type = "success") => {
-    setToast({ message, type });
-  }, []);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(timer);
-  }, [toast]);
-
+function getUserName() {
+  const user = getSession()?.user || {};
   return (
-    <ToastContext.Provider value={notify}>
-      {children}
-      {toast && (
-        <div className={`cf-toast ${toast.type}`} role="status">
-          {toast.message}
-        </div>
-      )}
-    </ToastContext.Provider>
+    user.name ||
+    [user.firstName, user.lastName]
+      .filter(Boolean)
+      .join(" ") ||
+    user.username ||
+    "User"
   );
 }
 
-const useToast = () => useContext(ToastContext);
+function unwrap(response) {
+  return response?.data?.data ?? response?.data;
+}
 
-function Modal({ title, onClose, children }) {
+function listOf(data, key) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.[key])) return data[key];
+  if (Array.isArray(data?.items)) return data.items;
+  return [];
+}
+
+function errorMessage(error) {
   return (
-    <div
-      className="overlay"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        className="modal card"
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-      >
-        <div className="modalhead">
-          <h2>{title}</h2>
-          <button
-            type="button"
-            className="iconbtn"
-            onClick={onClose}
-            aria-label="Close"
-          >
-            <X size={19} />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
+    error?.response?.data?.message ||
+    error?.message ||
+    "Something went wrong."
   );
 }
 
-function Confirm({ title, text, onConfirm, onCancel, busy }) {
-  return (
-    <Modal title={title} onClose={onCancel}>
-      <p>{text}</p>
-      <div className="row end">
-        <button
-          type="button"
-          className="secondary"
-          onClick={onCancel}
-          disabled={busy}
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          className="danger"
-          onClick={onConfirm}
-          disabled={busy}
-        >
-          {busy ? "Processing..." : "Confirm"}
-        </button>
-      </div>
-    </Modal>
-  );
+async function request(method, url, data) {
+  const response = await api.request({
+    method,
+    url,
+    data,
+  });
+  return unwrap(response);
 }
 
-function Stat({ n, t }) {
+function normalizeJob(job) {
+  return {
+    ...job,
+    _id: job?._id || job?.id,
+    requirements:
+      job?.requirements || job?.requiredSkills || [],
+    preferredField: job?.preferredField || "",
+    preferredDegree: job?.preferredDegree || "Any",
+    minimumGpa: job?.minimumGpa ?? "",
+    openings: job?.openings ?? 1,
+    closingDate: job?.closingDate
+      ? String(job.closingDate).slice(0, 10)
+      : "",
+    status: job?.status || "open",
+  };
+}
+
+function normalizeApplication(app) {
+  return {
+    ...app,
+    _id: app?._id || app?.id,
+    student: app?.student || app?.applicant || {},
+    internship: app?.internship || app?.job || {},
+    status: app?.status || "submitted",
+  };
+}
+
+function Stat({ icon: Icon, value, label }) {
   return (
     <div className="card stat">
-      <b>{n}</b>
-      <span>{t}</span>
+      {Icon && <Icon size={22} />}
+      <b>{value}</b>
+      <span>{label}</span>
     </div>
   );
 }
@@ -130,207 +139,91 @@ function Tags({ items = [] }) {
   );
 }
 
-function Empty({ text }) {
+function Empty({ message }) {
   return (
-    <div className="empty card">
+    <div className="card empty">
       <Briefcase size={28} />
-      <p>{text}</p>
+      <p>{message}</p>
     </div>
   );
 }
 
-function Field({ label, error, children }) {
+function Modal({ title, children, onClose }) {
   return (
-    <label className={error ? "invalid" : ""}>
-      {label}
-      {children}
-      {error && (
-        <span className="fielderror">{error}</span>
-      )}
-    </label>
+    <div
+      className="overlay"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="modal card" role="dialog" aria-modal="true">
+        <div className="modalhead">
+          <h2>{title}</h2>
+          <button
+            type="button"
+            className="iconbtn"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
   );
 }
 
-// ================================================
-// CURRENT USER
-// ================================================
-
-function getCurrentUserName() {
-  const user = getSession()?.user || {};
-
-  const fullName = [
-    user.firstName,
-    user.lastName,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
-
-  return (
-    user.name?.trim() ||
-    fullName ||
-    user.username ||
-    "User"
-  );
-}
-
-// ================================================
-// API ADAPTER
-// ================================================
-
-function unwrap(response) {
-  return response?.data?.data ?? response?.data;
-}
-
-function toList(data) {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.jobs)) return data.jobs;
-  if (Array.isArray(data?.applications)) {
-    return data.applications;
-  }
-  if (Array.isArray(data?.items)) return data.items;
-  return [];
-}
-
-async function request(url, method = "GET", body) {
-  const response = await http.request({
-    url,
-    method,
-    data: body,
-  });
-
-  return unwrap(response);
-}
-
-function normalizeJob(j) {
-  return {
-    ...j,
-    _id: j?._id || j?.id,
-    requiredSkills:
-      j?.requiredSkills || j?.requirements || [],
-    preferredField: j?.preferredField || "",
-    preferredDegree: j?.preferredDegree || "",
-    minimumGpa: j?.minimumGpa ?? "",
-    openings: j?.openings ?? 1,
-    closingDate: j?.closingDate || "",
-    status: j?.status || "open",
-    company:
-      j?.postedBy?.companyName ||
-      j?.postedBy?.name ||
-      "Company",
-  };
-}
-
-function normalizeApplication(a) {
-  return {
-    ...a,
-    _id: a?._id || a?.id,
-    internship:
-      a?.internship || a?.job || null,
-    student:
-      a?.student ||
-      a?.applicant ||
-      a?.user ||
-      null,
-    status: a?.status || "submitted",
-  };
-}
-
-async function fetchMyJobs() {
-  const data = await request("/jobs/mine");
-  return toList(data).map(normalizeJob);
-}
-
-// ================================================
-// JOB FORM
-// ================================================
-
-const DEGREE_OPTIONS = [
-  "Any",
-  "Certificate",
-  "Diploma",
-  "Bachelor",
-  "Master",
-  "PhD",
-];
-
-const emptyJob = {
-  title: "",
-  description: "",
-  location: "",
-  salaryRange: "",
-  requiredSkills: [],
-  preferredField: "",
-  preferredDegree: "Any",
-  minimumGpa: "",
-  openings: 1,
-  closingDate: "",
-  status: "open",
-};
-
-function JobForm({ job: initial, onClose, onSaved }) {
-  const notify = useToast();
-
+function JobForm({ initial, onClose, onSaved }) {
   const [form, setForm] = useState({
-    ...emptyJob,
-    ...initial,
-    requiredSkills: initial?.requiredSkills || [],
+    ...EMPTY_JOB,
+    ...(initial || {}),
+    requirements:
+      initial?.requirements ||
+      initial?.requiredSkills ||
+      [],
   });
 
-  const [skill, setSkill] = useState("");
-  const [errors, setErrors] = useState({});
-  const [busy, setBusy] = useState(false);
+  const [skillInput, setSkillInput] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const editing = Boolean(initial?._id);
 
-  const set = (key, value) => {
-    setForm((current) => ({
-      ...current,
-      [key]: value,
+  const set = (field, value) => {
+    setForm((previous) => ({
+      ...previous,
+      [field]: value,
     }));
   };
 
   const addSkill = () => {
-    const value = skill.trim();
-
+    const value = skillInput.trim();
     if (!value) return;
 
     if (
-      form.requiredSkills.some(
-        (existing) =>
-          existing.toLowerCase() ===
-          value.toLowerCase()
+      form.requirements.some(
+        (item) =>
+          item.toLowerCase() === value.toLowerCase()
       )
     ) {
-      notify("This skill is already added.", "error");
+      setSkillInput("");
       return;
     }
 
-    if (form.requiredSkills.length >= 30) {
-      notify("Maximum 30 skills allowed.", "error");
-      return;
-    }
-
-    set("requiredSkills", [
-      ...form.requiredSkills,
-      value,
-    ]);
-    setSkill("");
+    set("requirements", [...form.requirements, value]);
+    setSkillInput("");
   };
 
-  const validate = () => {
-    const next = {};
+  const submit = async (event) => {
+    event.preventDefault();
+    setError("");
 
-    if (!form.title.trim()) {
-      next.title = "Job title is required.";
-    }
-
-    if (!form.description.trim()) {
-      next.description = "Description is required.";
-    }
-
-    if (!form.location.trim()) {
-      next.location = "Location is required.";
+    if (!form.title.trim() || !form.description.trim()) {
+      setError("Job title and description are required.");
+      return;
     }
 
     if (
@@ -341,118 +234,90 @@ function JobForm({ job: initial, onClose, onSaved }) {
         Number(form.minimumGpa) > 4
       )
     ) {
-      next.minimumGpa =
-        "GPA must be between 0 and 4.";
+      setError("Minimum GPA must be between 0 and 4.");
+      return;
     }
 
     if (
       !Number.isInteger(Number(form.openings)) ||
       Number(form.openings) < 1
     ) {
-      next.openings =
-        "Openings must be a positive integer.";
+      setError("Openings must be a positive integer.");
+      return;
     }
 
-    if (
-      form.closingDate &&
-      form.closingDate <
-        new Date().toISOString().slice(0, 10)
-    ) {
-      next.closingDate =
-        "Closing date cannot be in the past.";
-    }
+    setSaving(true);
 
-    setErrors(next);
-    return Object.keys(next).length === 0;
-  };
-
-  const submit = async (event) => {
-    event.preventDefault();
-
-    if (!validate()) return;
-
-    setBusy(true);
+    const payload = {
+      title: form.title.trim(),
+      description: form.description.trim(),
+      location: form.location.trim(),
+      salaryRange: form.salaryRange.trim(),
+      requirements: form.requirements,
+      preferredField: form.preferredField.trim(),
+      preferredDegree: form.preferredDegree,
+      minimumGpa:
+        form.minimumGpa === ""
+          ? null
+          : Number(form.minimumGpa),
+      openings: Number(form.openings),
+      closingDate: form.closingDate || null,
+      status: form.status,
+    };
 
     try {
-      // Only fields supported by current backend.
-      const payload = {
-        title: form.title.trim(),
-        description: form.description.trim(),
-        location: form.location.trim(),
-        salaryRange: form.salaryRange.trim(),
-        requirements: form.requiredSkills,
-        status: form.status,
-      };
-
       if (editing) {
         await request(
-          `/jobs/${initial._id}`,
           "PATCH",
+          `/jobs/${initial._id}`,
           payload
         );
       } else {
-        await request(
-          "/jobs",
-          "POST",
-          payload
-        );
+        await request("POST", "/jobs", payload);
       }
 
-      notify(
+      onSaved(
         editing
           ? "Job updated successfully."
-          : "Job created successfully."
+          : "Job published successfully."
       );
-
-      onSaved();
-    } catch (error) {
-      notify(
-        error.message || "Unable to save job.",
-        "error"
-      );
+    } catch (err) {
+      setError(errorMessage(err));
     } finally {
-      setBusy(false);
+      setSaving(false);
     }
   };
 
   return (
     <Modal
-      title={
-        editing
-          ? "Edit job listing"
-          : "Create new job"
-      }
+      title={editing ? "Edit Job Listing" : "Post New Job"}
       onClose={onClose}
     >
       <form className="stack" onSubmit={submit}>
+        {error && <div className="error">{error}</div>}
+
         <div className="formgrid">
-          <Field
-            label="Job title *"
-            error={errors.title}
-          >
+          <label>
+            Job Title *
             <input
+              required
               value={form.title}
-              onChange={(e) =>
-                set("title", e.target.value)
-              }
+              onChange={(e) => set("title", e.target.value)}
               placeholder="Software Engineer Intern"
             />
-          </Field>
+          </label>
 
-          <Field
-            label="Location *"
-            error={errors.location}
-          >
+          <label>
+            Location
             <input
               value={form.location}
-              onChange={(e) =>
-                set("location", e.target.value)
-              }
+              onChange={(e) => set("location", e.target.value)}
               placeholder="Colombo / Remote"
             />
-          </Field>
+          </label>
 
-          <Field label="Salary range">
+          <label>
+            Salary Range
             <input
               value={form.salaryRange}
               onChange={(e) =>
@@ -460,40 +325,37 @@ function JobForm({ job: initial, onClose, onSaved }) {
               }
               placeholder="LKR 50,000 - 80,000"
             />
-          </Field>
+          </label>
 
-          <Field label="Preferred field">
+          <label>
+            Preferred Field
             <input
               value={form.preferredField}
               onChange={(e) =>
                 set("preferredField", e.target.value)
               }
-              placeholder="Computer Science"
+              placeholder="Computer Engineering"
             />
-          </Field>
+          </label>
 
-          <Field label="Preferred degree">
+          <label>
+            Preferred Degree
             <select
               value={form.preferredDegree}
               onChange={(e) =>
-                set(
-                  "preferredDegree",
-                  e.target.value
-                )
+                set("preferredDegree", e.target.value)
               }
             >
-              {DEGREE_OPTIONS.map((degree) => (
-                <option key={degree}>
+              {DEGREES.map((degree) => (
+                <option key={degree} value={degree}>
                   {degree}
                 </option>
               ))}
             </select>
-          </Field>
+          </label>
 
-          <Field
-            label="Minimum GPA"
-            error={errors.minimumGpa}
-          >
+          <label>
+            Minimum GPA
             <input
               type="number"
               min="0"
@@ -504,12 +366,10 @@ function JobForm({ job: initial, onClose, onSaved }) {
                 set("minimumGpa", e.target.value)
               }
             />
-          </Field>
+          </label>
 
-          <Field
-            label="Number of openings"
-            error={errors.openings}
-          >
+          <label>
+            Number of Openings
             <input
               type="number"
               min="1"
@@ -518,12 +378,10 @@ function JobForm({ job: initial, onClose, onSaved }) {
                 set("openings", e.target.value)
               }
             />
-          </Field>
+          </label>
 
-          <Field
-            label="Closing date"
-            error={errors.closingDate}
-          >
+          <label>
+            Closing Date
             <input
               type="date"
               value={form.closingDate}
@@ -531,9 +389,10 @@ function JobForm({ job: initial, onClose, onSaved }) {
                 set("closingDate", e.target.value)
               }
             />
-          </Field>
+          </label>
 
-          <Field label="Job status">
+          <label>
+            Job Status
             <select
               value={form.status}
               onChange={(e) =>
@@ -543,29 +402,29 @@ function JobForm({ job: initial, onClose, onSaved }) {
               <option value="open">Open</option>
               <option value="closed">Closed</option>
             </select>
-          </Field>
+          </label>
         </div>
 
-        <Field
-          label="Job description *"
-          error={errors.description}
-        >
+        <label>
+          Job Description *
           <textarea
+            required
             rows={5}
             value={form.description}
             onChange={(e) =>
               set("description", e.target.value)
             }
-            placeholder="Describe responsibilities..."
+            placeholder="Describe the job responsibilities..."
           />
-        </Field>
+        </label>
 
-        <Field label="Required skills">
+        <label>
+          Required Skills
           <div className="row">
             <input
-              value={skill}
+              value={skillInput}
               onChange={(e) =>
-                setSkill(e.target.value)
+                setSkillInput(e.target.value)
               }
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -573,47 +432,38 @@ function JobForm({ job: initial, onClose, onSaved }) {
                   addSkill();
                 }
               }}
-              placeholder="Add a skill"
+              placeholder="React, Node.js, MongoDB..."
             />
-
             <button
               type="button"
               className="secondary"
               onClick={addSkill}
             >
-              <Plus size={16} />
-              Add
+              <Plus size={16} /> Add
             </button>
           </div>
+        </label>
 
-          <div className="tags editable">
-            {form.requiredSkills.map((item) => (
-              <span key={item}>
-                {item}
-                <button
-                  type="button"
-                  onClick={() =>
-                    set(
-                      "requiredSkills",
-                      form.requiredSkills.filter(
-                        (x) => x !== item
-                      )
+        <div className="tags editable">
+          {form.requirements.map((skill) => (
+            <span key={skill}>
+              {skill}
+              <button
+                type="button"
+                onClick={() =>
+                  set(
+                    "requirements",
+                    form.requirements.filter(
+                      (item) => item !== skill
                     )
-                  }
-                  aria-label={`Remove ${item}`}
-                >
-                  <X size={13} />
-                </button>
-              </span>
-            ))}
-          </div>
-        </Field>
-
-        <p className="muted">
-          Advanced fields such as GPA, degree,
-          openings and deadline require backend
-          support before they can be saved.
-        </p>
+                  )
+                }
+              >
+                <X size={13} />
+              </button>
+            </span>
+          ))}
+        </div>
 
         <div className="row end">
           <button
@@ -624,15 +474,12 @@ function JobForm({ job: initial, onClose, onSaved }) {
             Cancel
           </button>
 
-          <button
-            type="submit"
-            disabled={busy}
-          >
-            {busy
+          <button type="submit" disabled={saving}>
+            {saving
               ? "Saving..."
               : editing
-              ? "Save changes"
-              : "Publish job"}
+                ? "Save Changes"
+                : "Publish Job"}
           </button>
         </div>
       </form>
@@ -640,124 +487,316 @@ function JobForm({ job: initial, onClose, onSaved }) {
   );
 }
 
-// ================================================
-// JOB BROWSER
-// ================================================
+function JobDetails({ job, onClose, onEdit, onDelete }) {
+  return (
+    <Modal title="Job Details" onClose={onClose}>
+      <div className="stack">
+        <span className={`status status-${job.status}`}>
+          {job.status}
+        </span>
 
-function JobBrowser({
-  reloadKey,
-  onView,
-  onEdit,
-  onDelete,
-  onTotal,
-}) {
-  const notify = useToast();
+        <h2>{job.title}</h2>
+        <p>{job.location || "Location not specified"}</p>
+
+        <div className="detailgrid">
+          <div>
+            <small>Salary</small>
+            <b>{job.salaryRange || "Not specified"}</b>
+          </div>
+          <div>
+            <small>Minimum GPA</small>
+            <b>
+              {job.minimumGpa === ""
+                ? "Not specified"
+                : job.minimumGpa}
+            </b>
+          </div>
+          <div>
+            <small>Degree</small>
+            <b>{job.preferredDegree}</b>
+          </div>
+          <div>
+            <small>Openings</small>
+            <b>{job.openings}</b>
+          </div>
+          <div>
+            <small>Closing Date</small>
+            <b>{job.closingDate || "Not specified"}</b>
+          </div>
+        </div>
+
+        <h3>Description</h3>
+        <p className="prewrap">{job.description}</p>
+
+        <h3>Required Skills</h3>
+        <Tags items={job.requirements} />
+
+        <div className="row end">
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => onEdit(job)}
+          >
+            <Pencil size={16} /> Edit
+          </button>
+
+          <button
+            type="button"
+            className="danger"
+            onClick={() => onDelete(job)}
+          >
+            <Trash2 size={16} /> Delete
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+export default function Company() {
+  const userName = getUserName();
 
   const [jobs, setJobs] = useState([]);
+  const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  const [formJob, setFormJob] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [viewJob, setViewJob] = useState(null);
+  const [deleteJob, setDeleteJob] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const [query, setQuery] = useState("");
   const [location, setLocation] = useState("");
   const [status, setStatus] = useState("");
-  const [degree, setDegree] = useState("");
   const [sort, setSort] = useState("newest");
   const [page, setPage] = useState(1);
 
   const pageSize = 6;
 
-  useEffect(() => {
-    let active = true;
+  const load = useCallback(async () => {
     setLoading(true);
+    setError("");
 
-    fetchMyJobs()
-      .then((data) => {
-        if (!active) return;
-        setJobs(data);
-        onTotal?.(data.length);
-      })
-      .catch((error) => {
-        if (active) {
-          notify(error.message, "error");
+    try {
+      const result = await request("GET", "/jobs/mine");
+      const myJobs = listOf(result, "jobs").map(normalizeJob);
+
+      setJobs(myJobs);
+
+      const groups = await Promise.allSettled(
+        myJobs.map((job) =>
+          request(
+            "GET",
+            `/applications/job/${job._id}`
+          )
+        )
+      );
+
+      const allApplications = [];
+
+      groups.forEach((group) => {
+        if (group.status === "fulfilled") {
+          allApplications.push(
+            ...listOf(
+              group.value,
+              "applications"
+            ).map(normalizeApplication)
+          );
         }
-      })
-      .finally(() => {
-        if (active) setLoading(false);
       });
 
-    return () => {
-      active = false;
-    };
-  }, [reloadKey]);
+      setApplications(allApplications);
 
-  const filtered = jobs
-    .filter((j) => {
-      const q = query.toLowerCase().trim();
+      if (groups.some((group) => group.status === "rejected")) {
+        setError(
+          "Some applicant lists could not be loaded."
+        );
+      }
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-      const text = [
-        j.title,
-        j.description,
-        ...(j.requiredSkills || []),
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const openCreate = () => {
+    setFormJob(null);
+    setShowForm(true);
+  };
+
+  const openEdit = (job) => {
+    setViewJob(null);
+    setFormJob(job);
+    setShowForm(true);
+  };
+
+  const openDelete = (job) => {
+    setViewJob(null);
+    setDeleteJob(job);
+  };
+
+  const removeJob = async () => {
+    if (!deleteJob?._id) return;
+
+    setDeleting(true);
+
+    try {
+      await request(
+        "DELETE",
+        `/jobs/${deleteJob._id}`
+      );
+
+      setNotice("Job deleted successfully.");
+      setDeleteJob(null);
+      await load();
+    } catch (err) {
+      setError(errorMessage(err));
+      setDeleteJob(null);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const updateStage = async (applicationId, newStatus) => {
+    setError("");
+
+    try {
+      await request(
+        "PATCH",
+        `/applications/${applicationId}/status`,
+        { status: newStatus }
+      );
+
+      setNotice("Application status updated.");
+      await load();
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  };
+
+  const filteredJobs = jobs
+    .filter((job) => {
+      const searchText = [
+        job.title,
+        job.description,
+        ...job.requirements,
       ]
         .join(" ")
         .toLowerCase();
 
       return (
-        (!q || text.includes(q)) &&
+        (!query ||
+          searchText.includes(query.toLowerCase())) &&
         (!location ||
-          (j.location || "")
+          (job.location || "")
             .toLowerCase()
             .includes(location.toLowerCase())) &&
-        (!status || j.status === status) &&
-        (!degree ||
-          !j.preferredDegree ||
-          j.preferredDegree === degree)
+        (!status || job.status === status)
       );
     })
     .sort((a, b) => {
       if (sort === "title") {
-        return (a.title || "").localeCompare(
-          b.title || ""
-        );
+        return a.title.localeCompare(b.title);
       }
 
-      const first = new Date(
-        a.createdAt || 0
-      ).getTime();
-
-      const second = new Date(
-        b.createdAt || 0
-      ).getTime();
+      const first = new Date(a.createdAt || 0).getTime();
+      const second = new Date(b.createdAt || 0).getTime();
 
       return sort === "oldest"
         ? first - second
         : second - first;
     });
 
-  const pages = Math.max(
+  const totalPages = Math.max(
     1,
-    Math.ceil(filtered.length / pageSize)
+    Math.ceil(filteredJobs.length / pageSize)
   );
 
-  const currentPage = Math.min(page, pages);
+  const currentPage = Math.min(page, totalPages);
 
-  const visible = filtered.slice(
+  const visibleJobs = filteredJobs.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
 
   return (
-    <div className="jobbrowser">
+    <div className="cf-skillmatch wrap">
+      <div className="welcome">
+        <div>
+          <span className="eyebrow">
+            CAREERFLOW / COMPANY
+          </span>
+
+          <h1>Welcome, {userName}!</h1>
+
+          <p>
+            Post opportunities, manage job listings and
+            connect with talented candidates.
+          </p>
+        </div>
+
+        <button type="button" onClick={openCreate}>
+          <Plus size={18} />
+          Post New Job
+        </button>
+      </div>
+
+      {error && <div className="error">{error}</div>}
+      {notice && (
+        <div className="card">
+          <p>{notice}</p>
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => setNotice("")}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      <div className="grid stats">
+        <Stat
+          icon={Briefcase}
+          value={jobs.length}
+          label="Total Jobs"
+        />
+        <Stat
+          icon={Users}
+          value={applications.length}
+          label="Applications"
+        />
+        <Stat
+          icon={CheckCircle}
+          value={
+            applications.filter((app) =>
+              ["shortlisted", "interview", "offered"]
+                .includes(app.status)
+            ).length
+          }
+          label="Advanced Candidates"
+        />
+      </div>
+
+      <h2>Manage Job Listings</h2>
+
       <div className="card filters">
         <div className="searchbox">
           <Search size={18} />
-
           <input
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
               setPage(1);
             }}
-            placeholder="Search title, description or skill"
+            placeholder="Search jobs..."
           />
         </div>
 
@@ -771,132 +810,102 @@ function JobBrowser({
         />
 
         <select
-          value={degree}
-          onChange={(e) => {
-            setDegree(e.target.value);
-            setPage(1);
-          }}
-        >
-          <option value="">All degrees</option>
-          {DEGREE_OPTIONS.map((d) => (
-            <option key={d}>{d}</option>
-          ))}
-        </select>
-
-        <select
           value={status}
           onChange={(e) => {
             setStatus(e.target.value);
             setPage(1);
           }}
         >
-          <option value="">All statuses</option>
+          <option value="">All Statuses</option>
           <option value="open">Open</option>
           <option value="closed">Closed</option>
         </select>
 
         <select
           value={sort}
-          onChange={(e) =>
-            setSort(e.target.value)
-          }
+          onChange={(e) => setSort(e.target.value)}
         >
-          <option value="newest">
-            Newest first
-          </option>
-          <option value="oldest">
-            Oldest first
-          </option>
-          <option value="title">
-            Title A-Z
-          </option>
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="title">Title A-Z</option>
         </select>
       </div>
 
       {loading ? (
-        <div className="card empty">
-          Loading jobs...
-        </div>
+        <Empty message="Loading job listings..." />
       ) : (
         <>
           <div className="cards">
-            {visible.map((j) => (
-              <div
-                className="card jobcard"
-                key={j._id}
-              >
+            {visibleJobs.map((job) => (
+              <div className="card jobcard" key={job._id}>
                 <div className="row between">
                   <span
-                    className={`status status-${j.status}`}
+                    className={`status status-${job.status}`}
                   >
-                    {j.status}
+                    {job.status}
                   </span>
-
                   <small>
-                    {j.createdAt
+                    {job.createdAt
                       ? new Date(
-                          j.createdAt
+                          job.createdAt
                         ).toLocaleDateString()
                       : ""}
                   </small>
                 </div>
 
-                <h3>{j.title}</h3>
+                <h3>{job.title}</h3>
 
                 <p>
-                  <MapPin size={14} />{" "}
-                  {j.location ||
-                    "Location not specified"}
+                  <MapPin size={14} />
+                  {" "}
+                  {job.location || "Not specified"}
                 </p>
 
                 <p className="clamp">
-                  {j.description}
+                  {job.description}
                 </p>
 
                 <Tags
-                  items={j.requiredSkills.slice(0, 5)}
+                  items={job.requirements.slice(0, 5)}
                 />
 
                 <div className="row between jobactions">
                   <button
                     type="button"
                     className="secondary"
-                    onClick={() => onView(j)}
+                    onClick={() => setViewJob(job)}
                   >
-                    <Eye size={16} />
-                    Details
+                    <Eye size={16} /> Details
                   </button>
 
                   <button
                     type="button"
                     className="secondary"
-                    onClick={() => onEdit(j)}
+                    onClick={() => openEdit(job)}
                   >
-                    <Pencil size={16} />
-                    Edit
+                    <Pencil size={16} /> Edit
                   </button>
 
                   <button
                     type="button"
                     className="danger"
-                    onClick={() => onDelete(j)}
+                    onClick={() => openDelete(job)}
                   >
-                    <Trash2 size={16} />
-                    Delete
+                    <Trash2 size={16} /> Delete
                   </button>
                 </div>
               </div>
             ))}
           </div>
 
-          {!visible.length && (
-            <Empty text="No job listings match your filters." />
+          {!visibleJobs.length && (
+            <Empty message="No job listings found." />
           )}
 
           <div className="pagination">
             <span>
-              {filtered.length} results · Page{" "}
-              {currentPage} of {pages}
+              {filteredJobs.length} results · Page{" "}
+              {currentPage} of {totalPages}
             </span>
 
             <div className="row">
@@ -914,7 +923,7 @@ function JobBrowser({
               <button
                 type="button"
                 className="secondary iconbtn"
-                disabled={currentPage === pages}
+                disabled={currentPage === totalPages}
                 onClick={() =>
                   setPage(currentPage + 1)
                 }
@@ -925,386 +934,70 @@ function JobBrowser({
           </div>
         </>
       )}
-    </div>
-  );
-}
 
-// ================================================
-// JOB DETAILS
-// ================================================
-
-function JobDetail({
-  id,
-  onClose,
-  onEdit,
-  onDelete,
-}) {
-  const notify = useToast();
-
-  const [item, setItem] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-
-    request(`/jobs/${id}`)
-      .then((data) => {
-        if (active) {
-          setItem(normalizeJob(data));
-        }
-      })
-      .catch((error) => {
-        if (active) {
-          notify(error.message, "error");
-        }
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [id]);
-
-  return (
-    <Modal
-      title="Job details"
-      onClose={onClose}
-    >
-      {loading ? (
-        <p>Loading...</p>
-      ) : !item ? (
-        <Empty text="Job not found." />
-      ) : (
-        <div className="stack">
-          <span
-            className={`status status-${item.status}`}
-          >
-            {item.status}
-          </span>
-
-          <h2>{item.title}</h2>
-          <p>{item.location}</p>
-
-          <div className="detailgrid">
-            <div>
-              <small>Salary range</small>
-              <b>
-                {item.salaryRange ||
-                  "Not specified"}
-              </b>
-            </div>
-
-            <div>
-              <small>Minimum GPA</small>
-              <b>
-                {item.minimumGpa ||
-                  "Not specified"}
-              </b>
-            </div>
-
-            <div>
-              <small>Preferred degree</small>
-              <b>
-                {item.preferredDegree ||
-                  "Any"}
-              </b>
-            </div>
-
-            <div>
-              <small>Openings</small>
-              <b>
-                {item.openings ||
-                  "Not specified"}
-              </b>
-            </div>
-          </div>
-
-          <h3>Description</h3>
-          <p className="prewrap">
-            {item.description}
-          </p>
-
-          <h3>Required skills</h3>
-          <Tags items={item.requiredSkills} />
-
-          <div className="row end">
-            <button
-              type="button"
-              className="secondary"
-              onClick={() => onEdit(item)}
-            >
-              <Pencil size={16} />
-              Edit
-            </button>
-
-            <button
-              type="button"
-              className="danger"
-              onClick={() => onDelete(item)}
-            >
-              <Trash2 size={16} />
-              Delete
-            </button>
-          </div>
-        </div>
-      )}
-    </Modal>
-  );
-}
-
-// ================================================
-// COMPANY DASHBOARD
-// ================================================
-
-const APPLICATION_STAGES = [
-  "submitted",
-  "reviewing",
-  "shortlisted",
-  "interview",
-  "offered",
-  "rejected",
-];
-
-function CompanyContent() {
-  const notify = useToast();
-
-  const userName = getCurrentUserName();
-
-  const [applications, setApplications] =
-    useState([]);
-
-  const [matches] = useState([]);
-
-  const [error, setError] = useState("");
-  const [form, setForm] = useState(null);
-  const [viewId, setViewId] = useState(null);
-  const [toDelete, setToDelete] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const [reloadKey, setReloadKey] = useState(0);
-  const [total, setTotal] = useState(0);
-
-  const load = useCallback(async () => {
-    try {
-      const myJobs = await fetchMyJobs();
-
-      const groups = await Promise.all(
-        myJobs.map(async (j) => {
-          try {
-            const data = await request(
-              `/applications/job/${j._id}`
-            );
-
-            return toList(data).map(
-              normalizeApplication
-            );
-          } catch {
-            return [];
-          }
-        })
-      );
-
-      setApplications(groups.flat());
-      setReloadKey((value) => value + 1);
-      setError("");
-    } catch (err) {
-      setError(err.message);
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const updateStage = async (id, status) => {
-    try {
-      await request(
-        `/applications/${id}/status`,
-        "PATCH",
-        { status }
-      );
-
-      notify("Application stage updated.");
-      load();
-    } catch (err) {
-      notify(err.message, "error");
-    }
-  };
-
-  const removeJob = async () => {
-    setBusy(true);
-
-    notify(
-      "Job deletion requires backend support. No changes were made.",
-      "error"
-    );
-
-    setBusy(false);
-    setToDelete(null);
-  };
-
-  const editJob = (j) => {
-    setViewId(null);
-    setForm(j);
-  };
-
-  const deleteJob = (j) => {
-    setViewId(null);
-    setToDelete(j);
-  };
-
-  return (
-    <div className="cf-skillmatch wrap">
-      {/* WELCOME SECTION */}
-      <div className="welcome">
-        <div>
-          <span className="eyebrow">
-            CAREERFLOW / COMPANY
-          </span>
-
-          <h1>
-            Welcome, {userName}!
-          </h1>
-
-          <p>
-            Post opportunities, manage your
-            listings and connect with
-            talented candidates.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setForm("new")}
-        >
-          <Plus size={18} />
-          Post New Job
-        </button>
-      </div>
-
-      {error && (
-        <div className="error">
-          {error}
-        </div>
-      )}
-
-      {/* STATISTICS */}
-      <div className="grid stats">
-        <Stat
-          n={total}
-          t="Total Jobs"
-        />
-
-        <Stat
-          n={applications.length}
-          t="Applications"
-        />
-
-        <Stat
-          n={
-            applications.filter((a) =>
-              [
-                "shortlisted",
-                "interview",
-                "offered",
-              ].includes(a.status)
-            ).length
-          }
-          t="In Late Stages"
-        />
-      </div>
-
-      {/* JOB LISTINGS */}
-      <h2>Manage Job Listings</h2>
-
-      <JobBrowser
-        reloadKey={reloadKey}
-        onTotal={setTotal}
-        onView={(j) =>
-          setViewId(j._id)
-        }
-        onEdit={editJob}
-        onDelete={deleteJob}
-      />
-
-      {/* APPLICATION PIPELINE */}
       <h2>Application Pipeline</h2>
 
       <div className="table card">
         <div className="tr apptr th">
           <span>Candidate</span>
           <span>Job</span>
-          <span>Current Stage</span>
-          <span>Update Stage</span>
+          <span>Current Status</span>
+          <span>Update Status</span>
         </div>
 
         {!applications.length && (
           <div className="tr">
-            <span>
-              No applications yet.
-            </span>
+            <span>No applications yet.</span>
           </div>
         )}
 
-        {applications.map((a) => (
-          <div
-            className="tr apptr"
-            key={a._id}
-          >
+        {applications.map((app) => (
+          <div className="tr apptr" key={app._id}>
             <span>
               <b>
-                {a.student?.name ||
-                  a.student?.user?.name ||
-                  "Candidate"}
+                {app.student?.name || "Candidate"}
               </b>
-
               <small>
-                {a.student?.field || ""}
-                {a.student?.gpa != null
-                  ? ` · GPA ${a.student.gpa}`
+                {app.student?.field || ""}
+                {app.student?.gpa != null
+                  ? ` · GPA ${app.student.gpa}`
                   : ""}
               </small>
             </span>
 
             <span>
               <b>
-                {a.internship?.title ||
-                  "Job"}
+                {app.internship?.title || "Job"}
               </b>
             </span>
 
             <span
-              className={`status status-${a.status}`}
+              className={`status status-${app.status}`}
             >
-              {a.status}
+              {app.status}
             </span>
 
             <span>
-              {a.status === "withdrawn" ? (
-                <small>
-                  Withdrawn by candidate
-                </small>
+              {app.status === "withdrawn" ? (
+                <small>Withdrawn</small>
               ) : (
                 <select
-                  value={a.status}
+                  value={app.status}
                   onChange={(e) =>
                     updateStage(
-                      a._id,
+                      app._id,
                       e.target.value
                     )
                   }
                 >
-                  {APPLICATION_STAGES.map(
-                    (stage) => (
-                      <option
-                        key={stage}
-                        value={stage}
-                      >
-                        {stage}
-                      </option>
-                    )
-                  )}
+                  {STAGES.map((stage) => (
+                    <option
+                      key={stage}
+                      value={stage}
+                    >
+                      {stage}
+                    </option>
+                  ))}
                 </select>
               )}
             </span>
@@ -1312,106 +1005,67 @@ function CompanyContent() {
         ))}
       </div>
 
-      {/* MATCHES */}
       <h2>Admin-Approved Candidates</h2>
+      <Empty
+        message="Approved candidates will appear when the admin approval workflow is implemented."
+      />
 
-      <div className="cards">
-        {matches.length ? (
-          matches.map((m) => (
-            <div
-              className="card match"
-              key={m._id}
-            >
-              <div
-                className="ring"
-                style={{
-                  "--p": `${
-                    Math.min(
-                      100,
-                      Math.max(0, m.score)
-                    ) * 3.6
-                  }deg`,
-                }}
-              >
-                <b>{m.score}%</b>
-              </div>
-
-              <div>
-                <span className="status">
-                  APPROVED MATCH
-                </span>
-
-                <h3>
-                  {m.student?.user?.name ||
-                    "Candidate"}
-                </h3>
-
-                <p>
-                  {m.student?.degree} in{" "}
-                  {m.student?.field}
-                </p>
-
-                <Tags
-                  items={m.matchedSkills || []}
-                />
-              </div>
-            </div>
-          ))
-        ) : (
-          <Empty
-            text="Approved candidate matches will appear after matching backend integration."
-          />
-        )}
-      </div>
-
-      {/* MODALS */}
-      {form && (
+      {showForm && (
         <JobForm
-          job={
-            form === "new"
-              ? null
-              : form
-          }
-          onClose={() =>
-            setForm(null)
-          }
-          onSaved={() => {
-            setForm(null);
-            load();
+          initial={formJob}
+          onClose={() => setShowForm(false)}
+          onSaved={async (message) => {
+            setShowForm(false);
+            setNotice(message);
+            await load();
           }}
         />
       )}
 
-      {viewId && (
-        <JobDetail
-          id={viewId}
-          onClose={() =>
-            setViewId(null)
-          }
-          onEdit={editJob}
-          onDelete={deleteJob}
+      {viewJob && (
+        <JobDetails
+          job={viewJob}
+          onClose={() => setViewJob(null)}
+          onEdit={openEdit}
+          onDelete={openDelete}
         />
       )}
 
-      {toDelete && (
-        <Confirm
-          title="Delete job listing?"
-          text={`Deleting "${toDelete.title}" requires backend support.`}
-          onConfirm={removeJob}
-          onCancel={() =>
-            setToDelete(null)
-          }
-          busy={busy}
-        />
+      {deleteJob && (
+        <Modal
+          title="Delete Job"
+          onClose={() => setDeleteJob(null)}
+        >
+          <p>
+            Are you sure you want to delete{" "}
+            <b>{deleteJob.title}</b>?
+          </p>
+
+          <p className="muted">
+            Associated applications may also be removed.
+            This action cannot be undone.
+          </p>
+
+          <div className="row end">
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => setDeleteJob(null)}
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              className="danger"
+              disabled={deleting}
+              onClick={removeJob}
+            >
+              {deleting ? "Deleting..." : "Delete Job"}
+            </button>
+          </div>
+        </Modal>
       )}
     </div>
-  );
-}
-
-export default function Company() {
-  return (
-    <ToastProvider>
-      <CompanyContent />
-    </ToastProvider>
   );
 }

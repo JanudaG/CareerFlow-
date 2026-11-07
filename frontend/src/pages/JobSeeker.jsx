@@ -1,34 +1,48 @@
-
-import "./Dashboard.css";
 import React, {
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-  createContext,
+  useCallback,useEffect,useState,
 } from "react";
-import {
-  Briefcase, X, Trash2, Undo2, Plus, Eye,
-  Pencil, Search, ChevronLeft, ChevronRight,
+import {Briefcase,X,Trash2,Undo2,Plus,Eye,Pencil,Search,ChevronLeft,ChevronRight,MapPin,GraduationCap,Send,Sparkles,
 } from "lucide-react";
-import { api as http, getSession } from "../lib/api.js";
+import { api, getSession } from "../lib/api.js";
+import "./Dashboard.css";
 
-// ================================================
-// USER AND API HELPERS
-// ================================================
+const DEGREES = [
+  "Certificate",
+  "Diploma",
+  "Bachelor",
+  "Master",
+  "PhD",
+];
 
-function getCurrentUser() {
-  return getSession()?.user || {};
-}
+const STAGES = [
+  "submitted",
+  "reviewing",
+  "shortlisted",
+  "interview",
+  "offered",
+];
 
-function getCurrentUserName() {
-  const user = getCurrentUser();
+const EMPTY_PROFILE = {
+  name: "",
+  university: "",
+  degree: "Bachelor",
+  field: "",
+  gpa: "",
+  graduationYear: "",
+  bio: "",
+  experience: "",
+  skills: [],
+  resumeLink: "",
+};
+
+function getUserName() {
+  const user = getSession()?.user || {};
+
   return (
-    user.name?.trim() ||
+    user.name ||
     [user.firstName, user.lastName]
       .filter(Boolean)
-      .join(" ")
-      .trim() ||
+      .join(" ") ||
     user.username ||
     "User"
   );
@@ -38,123 +52,69 @@ function unwrap(response) {
   return response?.data?.data ?? response?.data;
 }
 
-function toList(data) {
+function listOf(data, key) {
   if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.jobs)) return data.jobs;
-  if (Array.isArray(data?.applications)) return data.applications;
+  if (Array.isArray(data?.[key])) return data[key];
   if (Array.isArray(data?.items)) return data.items;
   return [];
 }
 
-async function request(url, method = "GET", body) {
-  const response = await http.request({
-    url,
+function errorMessage(error) {
+  return (
+    error?.response?.data?.message ||
+    error?.message ||
+    "Something went wrong."
+  );
+}
+
+async function request(method, url, data) {
+  const response = await api.request({
     method,
-    data: body,
+    url,
+    data,
   });
   return unwrap(response);
 }
 
-function normalizeJob(j) {
+function normalizeJob(job) {
   return {
-    ...j,
-    _id: j?._id || j?.id,
-    requiredSkills: j?.requiredSkills || j?.requirements || [],
-    minimumGpa: j?.minimumGpa ?? "",
-    preferredDegree: j?.preferredDegree || "",
-    preferredField: j?.preferredField || "",
-    openings: j?.openings ?? "",
-    closingDate: j?.closingDate || "",
-    status: j?.status || "open",
+    ...job,
+    _id: job?._id || job?.id,
+    requirements:
+      job?.requirements || job?.requiredSkills || [],
+    preferredDegree: job?.preferredDegree || "Any",
+    preferredField: job?.preferredField || "",
+    minimumGpa: job?.minimumGpa ?? "",
+    openings: job?.openings ?? 1,
+    closingDate: job?.closingDate
+      ? String(job.closingDate).slice(0, 10)
+      : "",
+    status: job?.status || "open",
     company:
-      j?.postedBy?.companyName ||
-      j?.postedBy?.name ||
+      job?.postedBy?.companyName ||
+      job?.postedBy?.name ||
+      job?.company?.companyName ||
       "Company",
   };
 }
 
-function normalizeApplication(a) {
+function normalizeApplication(app) {
+  const job = app?.internship || app?.job;
+
   return {
-    ...a,
-    _id: a?._id || a?.id,
-    internship: a?.internship
-      ? normalizeJob(a.internship)
-      : a?.job
-        ? normalizeJob(a.job)
-        : null,
-    status: a?.status || "submitted",
+    ...app,
+    _id: app?._id || app?.id,
+    internship: job ? normalizeJob(job) : null,
+    status: app?.status || "submitted",
   };
 }
 
-async function fetchJobs() {
-  return toList(await request("/jobs")).map(normalizeJob);
-}
-
-async function fetchApplications() {
-  return toList(
-    await request("/applications/mine")
-  ).map(normalizeApplication);
-}
-
-// ================================================
-// SHARED COMPONENTS
-// ================================================
-
-const ToastContext = createContext(() => {});
-
-function ToastProvider({ children }) {
-  const [toast, setToast] = useState(null);
-
-  const notify = useCallback((message, type = "success") => {
-    setToast({ message, type });
-  }, []);
-
-  useEffect(() => {
-    if (!toast) return;
-    const timer = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(timer);
-  }, [toast]);
-
-  return (
-    <ToastContext.Provider value={notify}>
-      {children}
-      {toast && (
-        <div className={`cf-toast ${toast.type}`} role="status">
-          {toast.message}
-        </div>
-      )}
-    </ToastContext.Provider>
-  );
-}
-
-const useToast = () => useContext(ToastContext);
-
-function Modal({ title, onClose, children }) {
-  return (
-    <div
-      className="overlay"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="modal card" role="dialog" aria-modal="true" aria-label={title}>
-        <div className="modalhead">
-          <h2>{title}</h2>
-          <button type="button" className="iconbtn" onClick={onClose} aria-label="Close">
-            <X size={19} />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function Stat({ n, t }) {
+function Stat({ icon: Icon, value, label }) {
   return (
     <div className="card stat">
-      <b>{n}</b>
-      <span>{t}</span>
+      {Icon && <Icon size={22} />}
+      <b>{value}</b>
+      <span>{label}</span>
     </div>
   );
 }
@@ -169,132 +129,150 @@ function Tags({ items = [] }) {
   );
 }
 
-function Empty({ text }) {
+function Empty({ message }) {
   return (
-    <div className="empty card">
+    <div className="card empty">
       <Briefcase size={28} />
-      <p>{text}</p>
+      <p>{message}</p>
     </div>
   );
 }
 
-function Field({ label, error, children }) {
+function Modal({ title, children, onClose }) {
   return (
-    <label className={error ? "invalid" : ""}>
-      {label}
-      {children}
-      {error && <span className="fielderror">{error}</span>}
-    </label>
+    <div
+      className="overlay"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div
+        className="modal card"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="modalhead">
+          <h2>{title}</h2>
+
+          <button
+            type="button"
+            className="iconbtn"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {children}
+      </div>
+    </div>
   );
 }
 
 // ================================================
-// PROFILE
+// PROFILE FORM
 // ================================================
 
-const DEGREES = [
-  "Certificate", "Diploma", "Bachelor",
-  "Master", "PhD",
-];
-
-const blankProfile = {
-  name: "",
-  university: "",
-  degree: "Bachelor",
-  field: "",
-  gpa: "",
-  graduationYear: "",
-  bio: "",
-  experience: "",
-  skills: [],
-};
-
-function profileKey() {
-  const user = getCurrentUser();
-  return `careerflow_profile_${user._id || user.id || user.email || "local"}`;
-}
-
-function readProfile() {
-  try {
-    const raw = localStorage.getItem(profileKey());
-    return raw
-      ? { ...blankProfile, ...JSON.parse(raw) }
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-function Profile({ initial, onSaved, onCancel }) {
-  const notify = useToast();
+function ProfileForm({ initial, onClose, onSaved }) {
   const [form, setForm] = useState({
-    ...blankProfile,
+    ...EMPTY_PROFILE,
     ...initial,
+    gpa: initial?.gpa ?? "",
+    graduationYear: initial?.graduationYear ?? "",
+    skills: initial?.skills || [],
   });
-  const [skill, setSkill] = useState("");
-  const [errors, setErrors] = useState({});
 
-  const set = (key, value) =>
-    setForm((current) => ({ ...current, [key]: value }));
+  const [skillInput, setSkillInput] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const set = (field, value) => {
+    setForm((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+  };
 
   const addSkill = () => {
-    const value = skill.trim();
+    const value = skillInput.trim();
     if (!value) return;
 
-    if (form.skills.some(
-      (s) => s.toLowerCase() === value.toLowerCase()
-    )) {
-      notify("Skill already added.", "error");
-      return;
-    }
-
-    if (form.skills.length >= 30) {
-      notify("Maximum 30 skills allowed.", "error");
+    if (
+      form.skills.some(
+        (skill) =>
+          skill.toLowerCase() === value.toLowerCase()
+      )
+    ) {
+      setSkillInput("");
       return;
     }
 
     set("skills", [...form.skills, value]);
-    setSkill("");
+    setSkillInput("");
   };
 
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault();
-    const next = {};
+    setError("");
 
-    if (!form.name.trim()) next.name = "Name is required.";
-    if (!form.field.trim()) next.field = "Field is required.";
+    if (!form.name.trim()) {
+      setError("Full name is required.");
+      return;
+    }
 
-    const gpa = Number(form.gpa);
-    if (
-      form.gpa === "" ||
-      !Number.isFinite(gpa) ||
-      gpa < 0 ||
-      gpa > 4
-    ) {
-      next.gpa = "GPA must be between 0 and 4.";
+    if (!form.field.trim()) {
+      setError("Field of study is required.");
+      return;
     }
 
     if (
-      form.graduationYear &&
-      !/^\d{4}$/.test(String(form.graduationYear))
+      form.gpa !== "" &&
+      (
+        !Number.isFinite(Number(form.gpa)) ||
+        Number(form.gpa) < 0 ||
+        Number(form.gpa) > 4
+      )
     ) {
-      next.graduationYear = "Enter a four-digit year.";
+      setError("GPA must be between 0 and 4.");
+      return;
     }
 
-    setErrors(next);
-    if (Object.keys(next).length) return;
-
-    const saved = { ...form, gpa };
+    setSaving(true);
 
     try {
-      localStorage.setItem(
-        profileKey(),
-        JSON.stringify(saved)
+      const payload = {
+        name: form.name.trim(),
+        university: form.university.trim(),
+        degree: form.degree,
+        field: form.field.trim(),
+        gpa:
+          form.gpa === ""
+            ? null
+            : Number(form.gpa),
+        graduationYear:
+          form.graduationYear === ""
+            ? null
+            : Number(form.graduationYear),
+        bio: form.bio.trim(),
+        experience: form.experience.trim(),
+        skills: form.skills,
+        resumeLink: form.resumeLink.trim(),
+      };
+
+      const saved = await request(
+        "PUT",
+        "/profile",
+        payload
       );
-      notify("Profile saved in this browser.");
+
       onSaved(saved);
-    } catch {
-      notify("Could not save profile.", "error");
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -302,130 +280,209 @@ function Profile({ initial, onSaved, onCancel }) {
     <div className="cf-skillmatch wrap">
       <div className="welcome">
         <div>
-          <span className="eyebrow">CAREERFLOW / JOB SEEKER</span>
-          <h1>My Profile</h1>
-          <p>Manage your qualifications and skills.</p>
+          <span className="eyebrow">
+            CAREERFLOW / JOB SEEKER
+          </span>
+
+          <h1>Edit My Profile</h1>
+
+          <p>
+            Keep your qualifications and skills updated
+            to improve your job recommendations.
+          </p>
         </div>
       </div>
 
-      <form className="card profileform stack" onSubmit={submit}>
-        <div className="formgrid">
-          <Field label="Full name *" error={errors.name}>
-            <input
-              value={form.name}
-              onChange={(e) => set("name", e.target.value)}
-              placeholder="Full name"
-            />
-          </Field>
+      <form
+        className="card profileform stack"
+        onSubmit={submit}
+      >
+        {error && <div className="error">{error}</div>}
 
-          <Field label="University">
+        <div className="formgrid">
+          <label>
+            Full Name *
+            <input
+              required
+              value={form.name}
+              onChange={(e) =>
+                set("name", e.target.value)
+              }
+            />
+          </label>
+
+          <label>
+            University
             <input
               value={form.university}
-              onChange={(e) => set("university", e.target.value)}
-              placeholder="University"
+              onChange={(e) =>
+                set("university", e.target.value)
+              }
+              placeholder="University of Ruhuna"
             />
-          </Field>
+          </label>
 
-          <Field label="Degree">
+          <label>
+            Degree
             <select
               value={form.degree}
-              onChange={(e) => set("degree", e.target.value)}
+              onChange={(e) =>
+                set("degree", e.target.value)
+              }
             >
-              {DEGREES.map((d) => (
-                <option key={d}>{d}</option>
+              {DEGREES.map((degree) => (
+                <option
+                  key={degree}
+                  value={degree}
+                >
+                  {degree}
+                </option>
               ))}
             </select>
-          </Field>
+          </label>
 
-          <Field label="Field of study *" error={errors.field}>
+          <label>
+            Field of Study *
             <input
+              required
               value={form.field}
-              onChange={(e) => set("field", e.target.value)}
+              onChange={(e) =>
+                set("field", e.target.value)
+              }
               placeholder="Computer Engineering"
             />
-          </Field>
+          </label>
 
-          <Field label="GPA *" error={errors.gpa}>
+          <label>
+            GPA
             <input
               type="number"
               min="0"
               max="4"
               step="0.01"
               value={form.gpa}
-              onChange={(e) => set("gpa", e.target.value)}
+              onChange={(e) =>
+                set("gpa", e.target.value)
+              }
             />
-          </Field>
+          </label>
 
-          <Field label="Graduation year" error={errors.graduationYear}>
+          <label>
+            Graduation Year
             <input
               type="number"
+              min="1900"
+              max="2200"
               value={form.graduationYear}
-              onChange={(e) => set("graduationYear", e.target.value)}
+              onChange={(e) =>
+                set("graduationYear", e.target.value)
+              }
             />
-          </Field>
+          </label>
         </div>
 
-        <Field label="Professional summary">
+        <label>
+          Professional Summary
           <textarea
             rows={3}
             maxLength={1000}
             value={form.bio}
-            onChange={(e) => set("bio", e.target.value)}
+            onChange={(e) =>
+              set("bio", e.target.value)
+            }
+            placeholder="Tell employers about yourself..."
           />
-        </Field>
+        </label>
 
-        <Field label="Experience / Projects">
+        <label>
+          Experience / Projects
           <textarea
             rows={3}
             maxLength={1500}
             value={form.experience}
-            onChange={(e) => set("experience", e.target.value)}
+            onChange={(e) =>
+              set("experience", e.target.value)
+            }
+            placeholder="Describe your projects..."
           />
-        </Field>
+        </label>
 
-        <Field label="Skills">
+        <label>
+          Resume Link
+          <input
+            type="url"
+            value={form.resumeLink}
+            onChange={(e) =>
+              set("resumeLink", e.target.value)
+            }
+            placeholder="https://..."
+          />
+        </label>
+
+        <label>
+          Skills
           <div className="row">
             <input
-              value={skill}
-              onChange={(e) => setSkill(e.target.value)}
+              value={skillInput}
+              onChange={(e) =>
+                setSkillInput(e.target.value)
+              }
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
                   addSkill();
                 }
               }}
-              placeholder="e.g. React"
+              placeholder="React, Python, SQL..."
             />
-            <button type="button" className="secondary" onClick={addSkill}>
+
+            <button
+              type="button"
+              className="secondary"
+              onClick={addSkill}
+            >
               <Plus size={16} /> Add
             </button>
           </div>
+        </label>
 
-          <div className="tags editable">
-            {form.skills.map((s) => (
-              <span key={s}>
-                {s}
-                <button
-                  type="button"
-                  aria-label={`Remove ${s}`}
-                  onClick={() =>
-                    set("skills", form.skills.filter((x) => x !== s))
-                  }
-                >
-                  <X size={13} />
-                </button>
-              </span>
-            ))}
-          </div>
-        </Field>
+        <div className="tags editable">
+          {form.skills.map((skill) => (
+            <span key={skill}>
+              {skill}
+              <button
+                type="button"
+                aria-label={`Remove ${skill}`}
+                onClick={() =>
+                  set(
+                    "skills",
+                    form.skills.filter(
+                      (item) => item !== skill
+                    )
+                  )
+                }
+              >
+                <X size={13} />
+              </button>
+            </span>
+          ))}
+        </div>
 
         <div className="row end">
-          {onCancel && (
-            <button type="button" className="secondary" onClick={onCancel}>
-              Cancel
-            </button>
-          )}
-          <button type="submit">Save Profile</button>
+          <button
+            type="button"
+            className="secondary"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            disabled={saving}
+          >
+            {saving ? "Saving..." : "Save Profile"}
+          </button>
         </div>
       </form>
     </div>
@@ -433,19 +490,257 @@ function Profile({ initial, onSaved, onCancel }) {
 }
 
 // ================================================
-// JOB BROWSER
+// JOB DETAILS
 // ================================================
 
-function JobBrowser({
-  appliedIds,
-  reloadKey,
-  onTotal,
-  onView,
+function JobDetails({
+  job,
+  applied,
+  onClose,
   onApply,
 }) {
-  const notify = useToast();
+  return (
+    <Modal title="Job Details" onClose={onClose}>
+      <div className="stack">
+        <span
+          className={`status status-${job.status}`}
+        >
+          {job.status}
+        </span>
+
+        <h2>{job.title}</h2>
+
+        <p>
+          {job.company} ·{" "}
+          {job.location || "Location not specified"}
+        </p>
+
+        <div className="detailgrid">
+          <div>
+            <small>Salary Range</small>
+            <b>{job.salaryRange || "Not specified"}</b>
+          </div>
+
+          <div>
+            <small>Minimum GPA</small>
+            <b>
+              {job.minimumGpa === ""
+                ? "Not specified"
+                : job.minimumGpa}
+            </b>
+          </div>
+
+          <div>
+            <small>Preferred Degree</small>
+            <b>{job.preferredDegree}</b>
+          </div>
+
+          <div>
+            <small>Openings</small>
+            <b>{job.openings}</b>
+          </div>
+
+          <div>
+            <small>Closing Date</small>
+            <b>{job.closingDate || "Not specified"}</b>
+          </div>
+        </div>
+
+        <h3>Job Description</h3>
+        <p className="prewrap">{job.description}</p>
+
+        <h3>Required Skills</h3>
+        <Tags items={job.requirements} />
+
+        <div className="row end">
+          <button
+            type="button"
+            className="secondary"
+            onClick={onClose}
+          >
+            Close
+          </button>
+
+          <button
+            type="button"
+            disabled={applied || job.status !== "open"}
+            onClick={() => onApply(job)}
+          >
+            {applied ? "Already Applied" : "Apply Now"}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// ================================================
+// APPLY MODAL
+// ================================================
+
+function ApplyModal({ job, onClose, onDone }) {
+  const [coverNote, setCoverNote] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async (event) => {
+    event.preventDefault();
+
+    if (coverNote.length > 1000) {
+      setError("Cover note is too long.");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+
+    try {
+      await request(
+        "POST",
+        `/applications/${job._id}`,
+        { coverNote: coverNote.trim() }
+      );
+
+      onDone();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal
+      title={`Apply for ${job.title}`}
+      onClose={onClose}
+    >
+      <form className="stack" onSubmit={submit}>
+        <p>
+          Company: <b>{job.company}</b>
+        </p>
+
+        {error && <div className="error">{error}</div>}
+
+        <label>
+          Cover Note (Optional)
+          <textarea
+            rows={5}
+            maxLength={1000}
+            value={coverNote}
+            onChange={(e) =>
+              setCoverNote(e.target.value)
+            }
+            placeholder="Explain why you are suitable..."
+          />
+        </label>
+
+        <small>
+          {coverNote.length}/1000 characters
+        </small>
+
+        <div className="row end">
+          <button
+            type="button"
+            className="secondary"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            disabled={saving}
+          >
+            <Send size={16} />
+            {saving ? "Submitting..." : "Submit Application"}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+// ================================================
+// SMART MATCH CARD
+// ================================================
+
+function MatchCard({ match, applied, onApply }) {
+  const job = normalizeJob(
+    match.job || match.internship || {}
+  );
+
+  const score = Math.max(
+    0,
+    Math.min(100, Number(match.score) || 0)
+  );
+
+  return (
+    <div className="card match">
+      <div
+        className="ring"
+        style={{ "--p": `${score * 3.6}deg` }}
+      >
+        <b>{score}%</b>
+      </div>
+
+      <div>
+        <span className="status">
+          SKILL MATCH
+        </span>
+
+        <h3>{job.title}</h3>
+
+        <p>
+          {job.company} · {job.location}
+        </p>
+
+        <p>
+          Matched skills:
+        </p>
+
+        <Tags items={match.matchedSkills || []} />
+
+        {!!match.missingSkills?.length && (
+          <small>
+            Skills to develop:{" "}
+            {match.missingSkills.join(", ")}
+          </small>
+        )}
+
+        <div className="row">
+          <button
+            type="button"
+            disabled={applied || job.status !== "open"}
+            onClick={() => onApply(job)}
+          >
+            {applied ? "Applied" : "Apply Now"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ================================================
+// JOB SEEKER DASHBOARD
+// ================================================
+
+export default function JobSeeker() {
+  const userName = getUserName();
+
+  const [profile, setProfile] = useState(null);
   const [jobs, setJobs] = useState([]);
+  const [applications, setApplications] = useState([]);
+  const [matches, setMatches] = useState([]);
+
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  const [viewJob, setViewJob] = useState(null);
+  const [applyJob, setApplyJob] = useState(null);
+
   const [query, setQuery] = useState("");
   const [location, setLocation] = useState("");
   const [degree, setDegree] = useState("");
@@ -455,63 +750,377 @@ function JobBrowser({
 
   const pageSize = 6;
 
-  useEffect(() => {
-    let active = true;
+  const load = useCallback(async () => {
     setLoading(true);
+    setError("");
 
-    fetchJobs()
-      .then((data) => {
-        if (!active) return;
-        setJobs(data);
-        onTotal?.(
-          data.filter((j) => j.status === "open").length
-        );
-      })
-      .catch((error) => {
-        if (active) notify(error.message, "error");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+    const results = await Promise.allSettled([
+      request("GET", "/profile"),
+      request("GET", "/jobs"),
+      request("GET", "/applications/mine"),
+      request("GET", "/matches/mine"),
+    ]);
 
-    return () => { active = false; };
-  }, [reloadKey]);
+    const [
+      profileResult,
+      jobsResult,
+      applicationsResult,
+      matchesResult,
+    ] = results;
 
-  const filtered = jobs
-    .filter((j) => {
-      const q = query.toLowerCase().trim();
+    if (profileResult.status === "fulfilled") {
+      setProfile(profileResult.value);
+    }
+
+    if (jobsResult.status === "fulfilled") {
+      setJobs(
+        listOf(jobsResult.value, "jobs")
+          .map(normalizeJob)
+      );
+    }
+
+    if (applicationsResult.status === "fulfilled") {
+      setApplications(
+        listOf(
+          applicationsResult.value,
+          "applications"
+        ).map(normalizeApplication)
+      );
+    }
+
+    if (matchesResult.status === "fulfilled") {
+      setMatches(
+        listOf(matchesResult.value, "matches")
+      );
+    }
+
+    const failures = results
+      .filter((result) => result.status === "rejected")
+      .map((result) => errorMessage(result.reason));
+
+    if (failures.length) {
+      setError(
+        `Some data could not be loaded: ${[
+          ...new Set(failures),
+        ].join(" ")}`
+      );
+    }
+
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const startApply = (job) => {
+    setViewJob(null);
+    setApplyJob(job);
+  };
+
+  const withdraw = async (applicationId) => {
+    if (
+      !window.confirm(
+        "Are you sure you want to withdraw this application?"
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await request(
+        "PATCH",
+        `/applications/${applicationId}/withdraw`
+      );
+
+      setNotice("Application withdrawn successfully.");
+      await load();
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  };
+
+  const remove = async (applicationId) => {
+    if (
+      !window.confirm(
+        "Delete this withdrawn application permanently?"
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await request(
+        "DELETE",
+        `/applications/${applicationId}`
+      );
+
+      setNotice("Application deleted successfully.");
+      await load();
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  };
+
+  const appliedIds = applications
+    .map((app) => app.internship?._id)
+    .filter(Boolean);
+
+  const filteredJobs = jobs
+    .filter((job) => {
       const text = [
-        j.title,
-        j.description,
-        ...(j.requiredSkills || []),
-      ].join(" ").toLowerCase();
+        job.title,
+        job.description,
+        job.company,
+        ...job.requirements,
+      ]
+        .join(" ")
+        .toLowerCase();
 
       return (
-        (!q || text.includes(q)) &&
-        (!location || (j.location || "")
-          .toLowerCase().includes(location.toLowerCase())) &&
-        (!degree || !j.preferredDegree || j.preferredDegree === degree) &&
-        (!status || j.status === status)
+        (!query ||
+          text.includes(query.toLowerCase())) &&
+        (!location ||
+          (job.location || "")
+            .toLowerCase()
+            .includes(location.toLowerCase())) &&
+        (!degree ||
+          job.preferredDegree === "Any" ||
+          job.preferredDegree === degree) &&
+        (!status || job.status === status)
       );
     })
     .sort((a, b) => {
       if (sort === "title") {
-        return (a.title || "").localeCompare(b.title || "");
+        return a.title.localeCompare(b.title);
       }
+
       const first = new Date(a.createdAt || 0).getTime();
       const second = new Date(b.createdAt || 0).getTime();
-      return sort === "oldest" ? first - second : second - first;
+
+      return sort === "oldest"
+        ? first - second
+        : second - first;
     });
 
-  const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const current = Math.min(page, pages);
-  const visible = filtered.slice(
-    (current - 1) * pageSize,
-    current * pageSize
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredJobs.length / pageSize)
   );
 
+  const currentPage = Math.min(page, totalPages);
+
+  const visibleJobs = filteredJobs.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  if (editing) {
+    return (
+      <ProfileForm
+        initial={{
+          ...EMPTY_PROFILE,
+          ...(profile || {}),
+          name: profile?.name || userName,
+        }}
+        onClose={() => setEditing(false)}
+        onSaved={(saved) => {
+          setProfile(saved);
+          setEditing(false);
+          setNotice("Profile saved successfully.");
+          load();
+        }}
+      />
+    );
+  }
+
   return (
-    <div className="jobbrowser">
+    <div className="cf-skillmatch wrap">
+      <div className="welcome">
+        <div>
+          <span className="eyebrow">
+            CAREERFLOW / JOB SEEKER
+          </span>
+
+          <h1>
+            Welcome, {profile?.name || userName}!
+          </h1>
+
+          <p>
+            Explore job opportunities, track your
+            applications and discover career matches.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="secondary"
+          onClick={() => setEditing(true)}
+        >
+          <Pencil size={17} />
+          Edit Profile
+        </button>
+      </div>
+
+      {error && <div className="error">{error}</div>}
+
+      {notice && (
+        <div className="card">
+          <p>{notice}</p>
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => setNotice("")}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      <div className="grid stats">
+        <Stat
+          icon={GraduationCap}
+          value={
+            profile?.gpa != null
+              ? `${profile.gpa}/4`
+              : "—"
+          }
+          label="Current GPA"
+        />
+
+        <Stat
+          icon={Sparkles}
+          value={profile?.skills?.length || 0}
+          label="Skills Listed"
+        />
+
+        <Stat
+          icon={Briefcase}
+          value={applications.length}
+          label="Applications"
+        />
+      </div>
+
+      <h2>Application Tracker</h2>
+
+      <div className="tracker">
+        {applications.length ? (
+          applications.map((app) => {
+            const stage = STAGES.indexOf(app.status);
+
+            return (
+              <div
+                className="card application"
+                key={app._id}
+              >
+                <div>
+                  <span
+                    className={`status status-${app.status}`}
+                  >
+                    {app.status}
+                  </span>
+
+                  <h3>
+                    {app.internship?.title ||
+                      "Job"}
+                  </h3>
+
+                  <p>
+                    {app.internship?.company ||
+                      "Company"}
+                  </p>
+
+                  <small>
+                    Updated:{" "}
+                    {app.updatedAt
+                      ? new Date(
+                          app.updatedAt
+                        ).toLocaleDateString()
+                      : "Recently"}
+                  </small>
+                </div>
+
+                <div>
+                  <div className="stagebar">
+                    {STAGES.map((item, index) => (
+                      <i
+                        key={item}
+                        title={item}
+                        className={
+                          stage >= index ? "done" : ""
+                        }
+                      />
+                    ))}
+                  </div>
+
+                  <div className="row end appactions">
+                    {![
+                      "withdrawn",
+                      "rejected",
+                      "offered",
+                    ].includes(app.status) && (
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() =>
+                          withdraw(app._id)
+                        }
+                      >
+                        <Undo2 size={16} />
+                        Withdraw
+                      </button>
+                    )}
+
+                    {app.status === "withdrawn" && (
+                      <button
+                        type="button"
+                        className="danger"
+                        onClick={() =>
+                          remove(app._id)
+                        }
+                      >
+                        <Trash2 size={16} />
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <Empty
+            message="No applications yet. Apply for a job to start tracking."
+          />
+        )}
+      </div>
+
+      <h2>Your Smart Matches</h2>
+
+      <div className="cards">
+        {matches.length ? (
+          matches.map((match) => {
+            const job = match.job || match.internship;
+            const jobId = job?._id || job?.id;
+
+            return (
+              <MatchCard
+                key={match._id || jobId}
+                match={match}
+                applied={appliedIds.includes(jobId)}
+                onApply={startApply}
+              />
+            );
+          })
+        ) : (
+          <Empty
+            message="No matching jobs found. Add skills to your profile to improve recommendations."
+          />
+        )}
+      </div>
+
+      <h2>Explore Open Jobs</h2>
+
       <div className="card filters">
         <div className="searchbox">
           <Search size={18} />
@@ -521,7 +1130,7 @@ function JobBrowser({
               setQuery(e.target.value);
               setPage(1);
             }}
-            placeholder="Search title, description or skill"
+            placeholder="Search jobs or skills..."
           />
         </div>
 
@@ -541,8 +1150,12 @@ function JobBrowser({
             setPage(1);
           }}
         >
-          <option value="">All degrees</option>
-          {DEGREES.map((d) => <option key={d}>{d}</option>)}
+          <option value="">All Degrees</option>
+          {DEGREES.map((item) => (
+            <option key={item} value={item}>
+              {item}
+            </option>
+          ))}
         </select>
 
         <select
@@ -552,92 +1165,130 @@ function JobBrowser({
             setPage(1);
           }}
         >
-          <option value="">All statuses</option>
+          <option value="">All Statuses</option>
           <option value="open">Open</option>
           <option value="closed">Closed</option>
         </select>
 
         <select
           value={sort}
-          onChange={(e) => setSort(e.target.value)}
+          onChange={(e) =>
+            setSort(e.target.value)
+          }
         >
-          <option value="newest">Newest first</option>
-          <option value="oldest">Oldest first</option>
-          <option value="title">Title A-Z</option>
+          <option value="newest">
+            Newest First
+          </option>
+          <option value="oldest">
+            Oldest First
+          </option>
+          <option value="title">
+            Title A-Z
+          </option>
         </select>
       </div>
 
       {loading ? (
-        <div className="card empty">Loading jobs...</div>
+        <Empty message="Loading jobs..." />
       ) : (
         <>
           <div className="cards">
-            {visible.map((j) => (
-              <div className="card jobcard" key={j._id}>
+            {visibleJobs.map((job) => (
+              <div
+                className="card jobcard"
+                key={job._id}
+              >
                 <div className="row between">
-                  <span className={`status status-${j.status}`}>
-                    {j.status}
+                  <span
+                    className={`status status-${job.status}`}
+                  >
+                    {job.status}
                   </span>
+
                   <small>
-                    {j.createdAt
-                      ? new Date(j.createdAt).toLocaleDateString()
+                    {job.createdAt
+                      ? new Date(
+                          job.createdAt
+                        ).toLocaleDateString()
                       : ""}
                   </small>
                 </div>
 
-                <h3>{j.title}</h3>
+                <h3>{job.title}</h3>
+
                 <p>
-                  {j.company} · {j.location || "Location not specified"}
+                  <MapPin size={14} />
+                  {" "}
+                  {job.company} ·{" "}
+                  {job.location || "Not specified"}
                 </p>
-                <p className="clamp">{j.description}</p>
-                <Tags items={j.requiredSkills.slice(0, 5)} />
+
+                <p className="clamp">
+                  {job.description}
+                </p>
+
+                <Tags
+                  items={job.requirements.slice(0, 5)}
+                />
 
                 <div className="row between jobactions">
                   <button
                     type="button"
                     className="secondary"
-                    onClick={() => onView(j)}
+                    onClick={() => setViewJob(job)}
                   >
-                    <Eye size={16} /> Details
+                    <Eye size={16} />
+                    Details
                   </button>
 
                   <button
                     type="button"
                     disabled={
-                      appliedIds.includes(j._id) ||
-                      j.status !== "open"
+                      appliedIds.includes(job._id) ||
+                      job.status !== "open"
                     }
-                    onClick={() => onApply(j)}
+                    onClick={() => startApply(job)}
                   >
-                    {appliedIds.includes(j._id) ? "Applied" : "Apply"}
+                    {appliedIds.includes(job._id)
+                      ? "Applied"
+                      : "Apply"}
                   </button>
                 </div>
               </div>
             ))}
           </div>
 
-          {!visible.length && (
-            <Empty text="No jobs match these filters." />
+          {!visibleJobs.length && (
+            <Empty
+              message="No jobs match your filters."
+            />
           )}
 
           <div className="pagination">
             <span>
-              {filtered.length} results · Page {current} of {pages}
+              {filteredJobs.length} results · Page{" "}
+              {currentPage} of {totalPages}
             </span>
+
             <div className="row">
               <button
                 type="button"
                 className="secondary iconbtn"
-                disabled={current === 1}
-                onClick={() => setPage(current - 1)}
+                disabled={currentPage === 1}
+                onClick={() =>
+                  setPage(currentPage - 1)
+                }
               >
                 <ChevronLeft />
               </button>
+
               <button
                 type="button"
                 className="secondary iconbtn"
-                disabled={current === pages}
-                onClick={() => setPage(current + 1)}
+                disabled={currentPage === totalPages}
+                onClick={() =>
+                  setPage(currentPage + 1)
+                }
               >
                 <ChevronRight />
               </button>
@@ -645,428 +1296,12 @@ function JobBrowser({
           </div>
         </>
       )}
-    </div>
-  );
-}
 
-// ================================================
-// JOB DETAIL MODAL
-// ================================================
-
-function JobDetail({ id, applied, onClose, onApply }) {
-  const notify = useToast();
-  const [item, setItem] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-
-    request(`/jobs/${id}`)
-      .then((data) => {
-        if (active) setItem(normalizeJob(data));
-      })
-      .catch((error) => {
-        if (active) notify(error.message, "error");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => { active = false; };
-  }, [id]);
-
-  return (
-    <Modal title="Job Details" onClose={onClose}>
-      {loading ? (
-        <p>Loading...</p>
-      ) : !item ? (
-        <Empty text="Job not found." />
-      ) : (
-        <div className="stack">
-          <span className={`status status-${item.status}`}>
-            {item.status}
-          </span>
-          <h2>{item.title}</h2>
-          <p>{item.company} · {item.location}</p>
-
-          <div className="detailgrid">
-            <div>
-              <small>Salary range</small>
-              <b>{item.salaryRange || "Not specified"}</b>
-            </div>
-            <div>
-              <small>Minimum GPA</small>
-              <b>{item.minimumGpa || "Not specified"}</b>
-            </div>
-            <div>
-              <small>Preferred degree</small>
-              <b>{item.preferredDegree || "Any"}</b>
-            </div>
-            <div>
-              <small>Openings</small>
-              <b>{item.openings || "Not specified"}</b>
-            </div>
-          </div>
-
-          <h3>Description</h3>
-          <p className="prewrap">{item.description}</p>
-          <h3>Required skills</h3>
-          <Tags items={item.requiredSkills} />
-
-          <div className="row end">
-            <button type="button" className="secondary" onClick={onClose}>
-              Close
-            </button>
-            <button
-              type="button"
-              disabled={applied || item.status !== "open"}
-              onClick={() => onApply(item)}
-            >
-              {applied ? "Applied" : "Apply Now"}
-            </button>
-          </div>
-        </div>
-      )}
-    </Modal>
-  );
-}
-
-// ================================================
-// APPLY MODAL
-// ================================================
-
-function ApplyModal({ job, onClose, onDone }) {
-  const notify = useToast();
-  const [note, setNote] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  const submit = async (event) => {
-    event.preventDefault();
-    if (note.length > 1000) return;
-
-    setBusy(true);
-    try {
-      await request(
-        `/applications/${job._id}`,
-        "POST"
-      );
-
-      notify(
-        note.trim()
-          ? "Application submitted. Cover note is not yet stored by the backend."
-          : "Application submitted successfully."
-      );
-      onDone();
-    } catch (error) {
-      notify(error.message, "error");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <Modal title={`Apply: ${job.title}`} onClose={onClose}>
-      <form className="stack" onSubmit={submit}>
-        <Field
-          label={`Cover note (optional · ${note.length}/1000)`}
-          error={note.length > 1000 ? "Maximum 1000 characters" : ""}
-        >
-          <textarea
-            rows={5}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Why are you a good fit?"
-          />
-        </Field>
-
-        <p className="muted">
-          Cover note persistence requires a backend update.
-        </p>
-
-        <div className="row end">
-          <button
-            type="button"
-            className="secondary"
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-          <button type="submit" disabled={busy || note.length > 1000}>
-            {busy ? "Submitting..." : "Submit Application"}
-          </button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-
-// ================================================
-// MATCH CARD
-// ================================================
-
-function MatchCard({ match }) {
-  const score = Math.max(
-    0,
-    Math.min(100, Number(match.score) || 0)
-  );
-
-  return (
-    <div className="card match">
-      <div
-        className="ring"
-        style={{ "--p": `${score * 3.6}deg` }}
-      >
-        <b>{score}%</b>
-      </div>
-
-      <div>
-        <span className="status">APPROVED MATCH</span>
-        <h3>
-          {match.internship?.title || match.job?.title}
-        </h3>
-        <p>
-          {match.internship?.company?.organization || "Company"}
-        </p>
-        <Tags items={match.matchedSkills || []} />
-        {!!match.missingSkills?.length && (
-          <small>
-            Develop next: {match.missingSkills.join(", ")}
-          </small>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ================================================
-// JOB SEEKER DASHBOARD
-// ================================================
-
-const STAGES = [
-  "submitted",
-  "reviewing",
-  "shortlisted",
-  "interview",
-  "offered",
-];
-
-function JobSeekerContent() {
-  const notify = useToast();
-  const userName = getCurrentUserName();
-
-  const [profile, setProfile] = useState(undefined);
-  const [applications, setApplications] = useState([]);
-  const [matches] = useState([]);
-  const [editing, setEditing] = useState(false);
-  const [error, setError] = useState("");
-  const [viewId, setViewId] = useState(null);
-  const [applyJob, setApplyJob] = useState(null);
-  const [reloadKey, setReloadKey] = useState(0);
-  const [total, setTotal] = useState(0);
-
-  const load = useCallback(async () => {
-    try {
-      const data = await fetchApplications();
-      setApplications(data);
-      setError("");
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setProfile(readProfile());
-      setReloadKey((value) => value + 1);
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const withdraw = () => {
-    notify(
-      "Withdraw requires a backend endpoint. No changes were made.",
-      "error"
-    );
-  };
-
-  const remove = () => {
-    notify(
-      "Delete requires a backend endpoint. No changes were made.",
-      "error"
-    );
-  };
-
-  if (profile === undefined) {
-    return (
-      <div className="cf-skillmatch wrap">
-        <p>Loading...</p>
-      </div>
-    );
-  }
-
-  if (editing) {
-    return (
-      <Profile
-        initial={
-          profile || {
-            ...blankProfile,
-            name: userName,
-          }
-        }
-        onSaved={(saved) => {
-          setProfile(saved);
-          setEditing(false);
-        }}
-        onCancel={() => setEditing(false)}
-      />
-    );
-  }
-
-  const appliedIds = applications
-    .filter((a) => a.status !== "withdrawn")
-    .map((a) => a.internship?._id)
-    .filter(Boolean);
-
-  const startApply = (job) => {
-    setViewId(null);
-    setApplyJob(job);
-  };
-
-  return (
-    <div className="cf-skillmatch wrap">
-      {/* WELCOME SECTION */}
-      <div className="welcome">
-        <div>
-          <span className="eyebrow">
-            CAREERFLOW / JOB SEEKER
-          </span>
-
-          <h1>Welcome, {userName}!</h1>
-
-          <p>
-            Explore job opportunities, track your applications
-            and discover your career matches.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          className="secondary"
-          onClick={() => setEditing(true)}
-        >
-          <Pencil size={17} />
-          Edit Profile
-        </button>
-      </div>
-
-      {error && <div className="error">{error}</div>}
-
-      {/* STATISTICS */}
-      <div className="grid stats">
-        <Stat n={profile?.gpa != null ? `${profile.gpa}/4` : "—"} t="Current GPA" />
-        <Stat n={profile?.skills?.length || 0} t="Skills Listed" />
-        <Stat n={applications.length} t="Applications" />
-      </div>
-
-      {/* APPLICATION TRACKER */}
-      <h2>Application Tracker</h2>
-
-      <div className="tracker">
-        {applications.length ? (
-          applications.map((a) => {
-            const stage = STAGES.indexOf(a.status);
-
-            return (
-              <div className="card application" key={a._id}>
-                <div>
-                  <span className={`status status-${a.status}`}>
-                    {a.status}
-                  </span>
-
-                  <h3>{a.internship?.title || "Job"}</h3>
-                  <p>
-                    {a.internship?.company || "Company"}
-                    {" · Updated "}
-                    {a.updatedAt
-                      ? new Date(a.updatedAt).toLocaleDateString()
-                      : "recently"}
-                  </p>
-                </div>
-
-                <div>
-                  <div className="stagebar">
-                    {STAGES.map((s, i) => (
-                      <i
-                        key={s}
-                        className={stage >= i ? "done" : ""}
-                        title={s}
-                      />
-                    ))}
-                  </div>
-
-                  <div className="row end appactions">
-                    {!["withdrawn", "rejected", "offered"].includes(a.status) && (
-                      <button
-                        type="button"
-                        className="secondary"
-                        onClick={withdraw}
-                      >
-                        <Undo2 size={16} /> Withdraw
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      className="danger"
-                      onClick={remove}
-                    >
-                      <Trash2 size={16} /> Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        ) : (
-          <Empty text="Apply to a job to start tracking your progress." />
-        )}
-      </div>
-
-      {/* SMART MATCHES */}
-      <h2>Your Smart Matches</h2>
-
-      <div className="cards">
-        {matches.length ? (
-          matches.map((m) => (
-            <MatchCard key={m._id} match={m} />
-          ))
-        ) : (
-          <Empty
-            text="Approved matches will appear after matching backend integration."
-          />
-        )}
-      </div>
-
-      {/* JOB BROWSER */}
-      <h2>Explore Open Jobs</h2>
-
-      <JobBrowser
-        appliedIds={appliedIds}
-        reloadKey={reloadKey}
-        onTotal={setTotal}
-        onView={(j) => setViewId(j._id)}
-        onApply={startApply}
-      />
-
-      <p className="muted">
-        {total} active opportunities available.
-      </p>
-
-      {/* MODALS */}
-      {viewId && (
-        <JobDetail
-          id={viewId}
-          applied={appliedIds.includes(viewId)}
-          onClose={() => setViewId(null)}
+      {viewJob && (
+        <JobDetails
+          job={viewJob}
+          applied={appliedIds.includes(viewJob._id)}
+          onClose={() => setViewJob(null)}
           onApply={startApply}
         />
       )}
@@ -1075,20 +1310,13 @@ function JobSeekerContent() {
         <ApplyModal
           job={applyJob}
           onClose={() => setApplyJob(null)}
-          onDone={() => {
+          onDone={async () => {
             setApplyJob(null);
-            load();
+            setNotice("Application submitted successfully.");
+            await load();
           }}
         />
       )}
     </div>
-  );
-}
-
-export default function JobSeeker() {
-  return (
-    <ToastProvider>
-      <JobSeekerContent />
-    </ToastProvider>
   );
 }
