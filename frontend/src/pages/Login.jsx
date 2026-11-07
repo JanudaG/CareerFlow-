@@ -17,13 +17,10 @@ function Login() {
     setError("");
    try {
 
-    const response = await axios.post(
-      "http://localhost:5000/api/auth/login",
-      {
-        email,
-        password
-      }
-    );
+    const response = await api.post("/auth/login", {
+  email,
+  password
+});
 
 
     // Save JWT token
