@@ -8,6 +8,7 @@ const jobRoutes = require("./Routes/jobRoutes");
 const applicationRoutes = require("./Routes/applicationRoutes");
 const profileRoutes = require("./Routes/profileRoutes");
 const matchRoutes = require("./Routes/matchRoutes");
+const adminRoutes = require("./Routes/adminRoutes");
 
 const app = express();
 
@@ -19,7 +20,7 @@ app.use("/api/jobs", jobRoutes);
 app.use("/api/applications", applicationRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/matches", matchRoutes);
-
+app.use("/api/admin", adminRoutes);
 app.get("/", (_req, res) => {
   res.send("CareerFlow API is running");
 });
