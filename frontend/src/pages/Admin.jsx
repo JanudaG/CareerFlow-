@@ -1,269 +1,158 @@
 
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api, getSession } from "../lib/api";
+import { api } from "../lib/api";
 import "./Admin.css";
 
-const menuItems = [
-  { icon: "▦", label: "Overview" },
-  { icon: "👥", label: "Users" },
-  { icon: "🏢", label: "Companies" },
-  { icon: "💼", label: "Jobs" },
-  { icon: "📄", label: "Applications" },
-  { icon: "✨", label: "Match Reviews" },
+const endpoints = {
+  Overview: "/admin/stats",
+  Companies: "/admin/companies",
+  "Job Seekers": "/admin/jobseekers",
+  Jobs: "/admin/jobs",
+  Applications: "/admin/applications",
+};
+
+const tabs = [
+  "Overview",
+  "Companies",
+  "Job Seekers",
+  "Jobs",
+  "Applications",
+  "Match Reviews",
 ];
 
 export default function Admin() {
   const navigate = useNavigate();
-  const user = getSession()?.user;
-
-  const [activeTab, setActiveTab] = useState("Overview");
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState("Overview");
+  const [data, setData] = useState(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    let active = true;
-
-    async function loadStats() {
-      try {
-        const response = await api.get("/admin/stats");
-        if (active) setStats(response.data);
-      } catch (err) {
-        if (active) {
-          setError(
-            err.response?.data?.message ||
-              "Statistics are not available yet."
-          );
-        }
-      } finally {
-        if (active) setLoading(false);
-      }
+    if (!endpoints[tab]) {
+      setData(null);
+      setError("");
+      return;
     }
 
-    loadStats();
+    let active = true;
+    setLoading(true);
+    setError("");
+    setData(null);
 
-    return () => {
-      active = false;
-    };
-  }, []);
+    api.get(endpoints[tab])
+      .then((res) => {
+        if (active) setData(res.data);
+      })
+      .catch((err) => {
+        if (active) {
+          setError(err.response?.data?.message || "Failed to load data");
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
 
-  const handleLogout = () => {
+    return () => { active = false; };
+  }, [tab]);
+
+  const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     navigate("/login", { replace: true });
   };
 
-  const cards = [
-    {
-      title: "Job Seekers",
-      value: stats?.totalJobSeekers,
-      icon: "👥",
-      color: "purple",
-    },
-    {
-      title: "Companies",
-      value: stats?.totalCompanies,
-      icon: "🏢",
-      color: "blue",
-    },
-    {
-      title: "Total Jobs",
-      value: stats?.totalJobs,
-      icon: "💼",
-      color: "pink",
-    },
-    {
-      title: "Applications",
-      value: stats?.totalApplications,
-      icon: "📄",
-      color: "green",
-    },
+  const stats = [
+    ["Job Seekers", data?.totalJobSeekers],
+    ["Companies", data?.totalCompanies],
+    ["Jobs", data?.totalJobs],
+    ["Applications", data?.totalApplications],
   ];
 
+  const getColumns = () => {
+    switch (tab) {
+      case "Companies":
+        return ["companyName", "name", "email"];
+      case "Job Seekers":
+        return ["name", "email", "university", "degree", "field"];
+      case "Jobs":
+        return ["title", "location", "status"];
+      case "Applications":
+        return ["applicant", "job", "status"];
+      default:
+        return [];
+    }
+  };
+
+  const formatValue = (item, field) => {
+    if (field === "applicant") return item.applicant?.name || "—";
+    if (field === "job") return item.job?.title || "—";
+    return item[field] ?? "—";
+  };
+
   return (
-    <div className="cf-admin">
-      <aside className="cf-admin-sidebar">
-        <div className="cf-admin-brand">
-          <div className="cf-admin-brand-icon">✦</div>
-          <div>
-            <h2>CareerFlow</h2>
-            <span>ADMIN PORTAL</span>
-          </div>
-        </div>
+    <div className="simple-admin">
+      <header className="simple-admin-header">
+        <h2>CareerFlow Admin</h2>
+      </header>
 
-        <div className="cf-admin-menu-label">WORKSPACE</div>
-
-        <nav className="cf-admin-nav">
-          {menuItems.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              className={
-                activeTab === item.label ? "active" : ""
-              }
-              onClick={() => setActiveTab(item.label)}
-            >
-              <span>{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
-        </nav>
-
-        <div className="cf-admin-sidebar-bottom">
-          <div className="cf-admin-profile">
-            <div className="cf-admin-avatar">
-              {user?.name?.charAt(0)?.toUpperCase() || "A"}
-            </div>
-            <div>
-              <strong>{user?.name || "Admin"}</strong>
-              <small>Administrator</small>
-            </div>
-          </div>
-
+      <nav className="simple-admin-nav">
+        {tabs.map((name) => (
           <button
-            className="cf-admin-logout"
-            type="button"
-            onClick={handleLogout}
+            key={name}
+            className={tab === name ? "active" : ""}
+            onClick={() => setTab(name)}
           >
-            ↪ Sign Out
+            {name}
           </button>
-        </div>
-      </aside>
+        ))}
+      </nav>
 
-      <main className="cf-admin-main">
-        <header className="cf-admin-topbar">
-          <div>
-            <div className="cf-admin-breadcrumb">
-              Admin Portal / {activeTab}
-            </div>
-            <h1>{activeTab}</h1>
-            <p>
-              {activeTab === "Overview"
-                ? "Here's what's happening across your platform."
-                : `Manage CareerFlow ${activeTab.toLowerCase()}.`}
-            </p>
-          </div>
+      <main className="simple-admin-main">
+        <h1>{tab}</h1>
 
-          <div className="cf-admin-top-profile">
-            <span className="cf-admin-online-dot" />
-            Administrator
-          </div>
-        </header>
+        {loading && <p>Loading...</p>}
+        {error && <p className="simple-admin-error">{error}</p>}
 
-        {activeTab === "Overview" ? (
-          <>
-            <section className="cf-admin-welcome">
-              <div>
-                <span className="cf-admin-eyebrow">
-                  ✨ CAREERFLOW ADMINISTRATION
-                </span>
-                <h2>
-                  Welcome back, {user?.name || "Admin"}!
-                </h2>
-                <p>
-                  Monitor your platform and manage the
-                  recruitment workflow from one place.
-                </p>
+        {!loading && !error && tab === "Overview" && (
+          <div className="simple-admin-stats">
+            {stats.map(([label, value]) => (
+              <div className="simple-admin-card" key={label}>
+                <p>{label}</p>
+                <h2>{value ?? "—"}</h2>
               </div>
-              <div className="cf-admin-welcome-art">✦</div>
-            </section>
+            ))}
+          </div>
+        )}
 
-            <div className="cf-admin-section-heading">
-              <h2>Platform Overview</h2>
-              <span>Live platform statistics</span>
-            </div>
-
-            {error && (
-              <div className="cf-admin-error">{error}</div>
+        {!loading && !error && getColumns().length > 0 && (
+          <div className="simple-admin-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  {getColumns().map((field) => (
+                    <th key={field}>{field}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(Array.isArray(data) ? data : []).map((item) => (
+                  <tr key={item._id}>
+                    {getColumns().map((field) => (
+                      <td key={field}>{formatValue(item, field)}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {Array.isArray(data) && data.length === 0 && (
+              <p>No records found.</p>
             )}
+          </div>
+        )}
 
-            <section className="cf-admin-stats">
-              {cards.map((card) => (
-                <div
-                  className="cf-admin-stat-card"
-                  key={card.title}
-                >
-                  <div
-                    className={`cf-admin-stat-icon ${card.color}`}
-                  >
-                    {card.icon}
-                  </div>
-
-                  <p>{card.title}</p>
-
-                  <h3>
-                    {loading
-                      ? "..."
-                      : card.value !== undefined
-                        ? card.value.toLocaleString()
-                        : "—"}
-                  </h3>
-
-                  <span>Platform total</span>
-                </div>
-              ))}
-            </section>
-
-            <div className="cf-admin-section-heading">
-              <h2>Management Center</h2>
-              <span>Quick access to admin modules</span>
-            </div>
-
-            <section className="cf-admin-actions">
-              {[
-                {
-                  icon: "👥",
-                  title: "User Management",
-                  description:
-                    "View and manage registered users.",
-                  tab: "Users",
-                },
-                {
-                  icon: "💼",
-                  title: "Job Management",
-                  description:
-                    "Review jobs across the platform.",
-                  tab: "Jobs",
-                },
-                {
-                  icon: "✨",
-                  title: "Match Reviews",
-                  description:
-                    "Review and approve candidate matches.",
-                  tab: "Match Reviews",
-                },
-              ].map((action) => (
-                <button
-                  type="button"
-                  key={action.title}
-                  className="cf-admin-action-card"
-                  onClick={() => setActiveTab(action.tab)}
-                >
-                  <span className="cf-admin-action-icon">
-                    {action.icon}
-                  </span>
-                  <strong>{action.title}</strong>
-                  <p>{action.description}</p>
-                  <span className="cf-admin-action-link">
-                    Open module →
-                  </span>
-                </button>
-              ))}
-            </section>
-          </>
-        ) : (
-          <section className="cf-admin-module">
-            <div className="cf-admin-module-icon">🚀</div>
-            <h2>{activeTab} Management</h2>
-            
-            <button
-              type="button"
-              onClick={() => setActiveTab("Overview")}
-            >
-              ← Back to Overview
-            </button>
-          </section>
+        {tab === "Match Reviews" && (
+          <p>Match approval feature will be added next.</p>
         )}
       </main>
     </div>
