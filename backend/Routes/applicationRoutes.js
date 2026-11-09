@@ -1,11 +1,21 @@
 
 const express = require("express");
 const mongoose = require("mongoose");
+
 const Application = require("../models/Application");
 const Job = require("../models/Job");
-const { requireAuth, requireRole } = require("../middleware/auth");
+
+const {
+  requireAuth,
+  requireRole,
+} = require("../middleware/auth");
 
 const router = express.Router();
+
+// ================================================
+// HELPERS
+// ================================================
+
 const validId = (id) => mongoose.isValidObjectId(id);
 
 const legacyStatus = {
@@ -16,18 +26,45 @@ const legacyStatus = {
   Rejected: "rejected",
 };
 
+function normalizeStatus(status) {
+  return legacyStatus[status] || status;
+}
+
+function validEmail(email) {
+  return (
+    typeof email === "string" &&
+    email.length <= 254 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  );
+}
+
+function validPhone(phone) {
+  if (typeof phone !== "string") {
+    return false;
+  }
+
+  const normalized = phone.replace(/[\s().-]/g, "");
+
+  return /^\+?[0-9]{7,15}$/.test(normalized);
+}
+
 function present(application) {
-  const a = application.toObject
-    ? application.toObject()
-    : application;
+  const a =
+    typeof application?.toObject === "function"
+      ? application.toObject()
+      : application;
 
   return {
     ...a,
-    status: legacyStatus[a.status] || a.status,
+    status: normalizeStatus(a.status),
     internship: a.job,
     student: a.applicant,
   };
 }
+
+// ================================================
+// GET MY APPLICATIONS - JOB SEEKER
+// ================================================
 
 router.get(
   "/mine",
@@ -35,7 +72,7 @@ router.get(
   requireRole("jobseeker"),
   async (req, res) => {
     try {
-      const apps = await Application.find({
+      const applications = await Application.find({
         applicant: req.user._id,
       })
         .populate({
@@ -47,14 +84,20 @@ router.get(
         })
         .sort({ createdAt: -1 });
 
-      res.json(apps.map(present));
-    } catch {
-      res.status(500).json({
+      return res.json(applications.map(present));
+    } catch (err) {
+      console.error("Get my applications error:", err);
+
+      return res.status(500).json({
         message: "Could not load applications.",
       });
     }
   }
 );
+
+// ================================================
+// GET JOB APPLICANTS - EMPLOYER
+// ================================================
 
 router.get(
   "/job/:jobId",
@@ -68,6 +111,7 @@ router.get(
         });
       }
 
+      // Verify that the employer owns the job.
       const job = await Job.findOne({
         _id: req.params.jobId,
         postedBy: req.user._id,
@@ -79,21 +123,43 @@ router.get(
         });
       }
 
-      const apps = await Application.find({
+      const applications = await Application.find({
         job: job._id,
       })
-        .populate("applicant", "name email skills bio resumeLink university degree field gpa")
+        .populate({
+          path: "applicant",
+          select: [
+            "name",
+            "email",
+            "university",
+            "degree",
+            "field",
+            "gpa",
+            "skills",
+            "bio",
+            "experience",
+            "resumeLink",
+          ].join(" "),
+        })
         .populate("job", "title location")
         .sort({ createdAt: -1 });
 
-      res.json(apps.map(present));
-    } catch {
-      res.status(500).json({
+      // Application-level contactEmail and contactPhone
+      // are included in the response automatically.
+      return res.json(applications.map(present));
+    } catch (err) {
+      console.error("Get job applicants error:", err);
+
+      return res.status(500).json({
         message: "Could not load applicants.",
       });
     }
   }
 );
+
+// ================================================
+// SUBMIT JOB APPLICATION - JOB SEEKER
+// ================================================
 
 router.post(
   "/:jobId",
@@ -117,21 +183,50 @@ router.post(
 
       if (
         job.closingDate &&
-        job.closingDate.getTime() < Date.now()
+        new Date(job.closingDate).getTime() < Date.now()
       ) {
         return res.status(400).json({
           message: "Application deadline has passed.",
         });
       }
 
-      const note = req.body?.coverNote ?? "";
+      const {
+        contactEmail,
+        contactPhone,
+        coverNote = "",
+      } = req.body || {};
 
-      if (typeof note !== "string" || note.length > 1000) {
+      // Validate email.
+      if (
+        typeof contactEmail !== "string" ||
+        !validEmail(contactEmail.trim())
+      ) {
+        return res.status(400).json({
+          message: "Please enter a valid contact email.",
+        });
+      }
+
+      // Validate phone.
+      if (
+        typeof contactPhone !== "string" ||
+        !validPhone(contactPhone.trim())
+      ) {
+        return res.status(400).json({
+          message: "Please enter a valid phone number.",
+        });
+      }
+
+      // Validate cover note.
+      if (
+        typeof coverNote !== "string" ||
+        coverNote.length > 1000
+      ) {
         return res.status(400).json({
           message: "Invalid cover note.",
         });
       }
 
+      // Prevent duplicate applications.
       const existing = await Application.findOne({
         job: job._id,
         applicant: req.user._id,
@@ -143,28 +238,42 @@ router.post(
         });
       }
 
+      // Save contact details in application document.
       const application = await Application.create({
         job: job._id,
         applicant: req.user._id,
-        coverNote: note.trim(),
+        contactEmail: contactEmail.trim().toLowerCase(),
+        contactPhone: contactPhone.trim(),
+        coverNote: coverNote.trim(),
       });
 
-      res.status(201).json(present(application));
+      return res.status(201).json(present(application));
     } catch (err) {
+      console.error("Submit application error:", err);
+
       if (err.code === 11000) {
         return res.status(409).json({
           message: "You already applied to this job.",
         });
       }
 
-      res.status(500).json({
+      if (err.name === "ValidationError") {
+        return res.status(400).json({
+          message: "Invalid application details.",
+        });
+      }
+
+      return res.status(500).json({
         message: "Could not submit application.",
       });
     }
   }
 );
 
-// Company updates an applicant's status.
+// ================================================
+// UPDATE APPLICATION STATUS - EMPLOYER
+// ================================================
+
 router.patch(
   "/:applicationId/status",
   requireAuth,
@@ -186,7 +295,9 @@ router.patch(
         });
       }
 
-      if (!allowed.includes(req.body.status)) {
+      const newStatus = req.body?.status;
+
+      if (!allowed.includes(newStatus)) {
         return res.status(400).json({
           message: "Invalid application status.",
         });
@@ -202,33 +313,59 @@ router.patch(
         });
       }
 
+      // Only the job owner may update status.
       if (
-        String(app.job.postedBy) !== String(req.user._id)
+        String(app.job.postedBy) !==
+        String(req.user._id)
       ) {
         return res.status(403).json({
           message: "Permission denied.",
         });
       }
 
-      if (present(app).status === "withdrawn") {
+      if (normalizeStatus(app.status) === "withdrawn") {
         return res.status(409).json({
           message: "Withdrawn applications cannot be updated.",
         });
       }
 
-      app.status = req.body.status;
-      await app.save();
+      // Update only status instead of saving the
+      // entire legacy application document.
+      const updated = await Application.findOneAndUpdate(
+        {
+          _id: app._id,
+          status: app.status,
+        },
+        {
+          $set: { status: newStatus },
+        },
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
 
-      res.json(present(app));
-    } catch {
-      res.status(500).json({
+      if (!updated) {
+        return res.status(409).json({
+          message: "Application changed. Please refresh.",
+        });
+      }
+
+      return res.json(present(updated));
+    } catch (err) {
+      console.error("Update application status error:", err);
+
+      return res.status(500).json({
         message: "Could not update application.",
       });
     }
   }
 );
 
-// Job seeker withdraws an application.
+// ================================================
+// WITHDRAW APPLICATION - JOB SEEKER
+// ================================================
+
 router.patch(
   "/:applicationId/withdraw",
   requireAuth,
@@ -252,27 +389,60 @@ router.patch(
         });
       }
 
-      const current = present(app).status;
+      const currentStatus = normalizeStatus(app.status);
 
-      if (["offered", "rejected", "withdrawn"].includes(current)) {
+      if (
+        ["offered", "rejected", "withdrawn"].includes(
+          currentStatus
+        )
+      ) {
         return res.status(409).json({
           message: "This application cannot be withdrawn.",
         });
       }
 
-      app.status = "withdrawn";
-      await app.save();
+      // IMPORTANT:
+      // findOneAndUpdate validates the updated status,
+      // without requiring missing contact fields on
+      // old application documents.
+      const updated = await Application.findOneAndUpdate(
+        {
+          _id: app._id,
+          applicant: req.user._id,
+          status: app.status,
+        },
+        {
+          $set: {
+            status: "withdrawn",
+          },
+        },
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
 
-      res.json(present(app));
-    } catch {
-      res.status(500).json({
+      if (!updated) {
+        return res.status(409).json({
+          message: "Application changed. Please refresh.",
+        });
+      }
+
+      return res.json(present(updated));
+    } catch (err) {
+      console.error("Withdraw application error:", err);
+
+      return res.status(500).json({
         message: "Could not withdraw application.",
       });
     }
   }
 );
 
-// Delete own application.
+// ================================================
+// DELETE APPLICATION - JOB SEEKER
+// ================================================
+
 router.delete(
   "/:applicationId",
   requireAuth,
@@ -296,19 +466,22 @@ router.delete(
         });
       }
 
-      if (present(app).status !== "withdrawn") {
+      if (normalizeStatus(app.status) !== "withdrawn") {
         return res.status(409).json({
-          message: "Withdraw the application before deleting it.",
+          message:
+            "Withdraw the application before deleting it.",
         });
       }
 
       await app.deleteOne();
 
-      res.json({
+      return res.json({
         message: "Application deleted successfully.",
       });
-    } catch {
-      res.status(500).json({
+    } catch (err) {
+      console.error("Delete application error:", err);
+
+      return res.status(500).json({
         message: "Could not delete application.",
       });
     }

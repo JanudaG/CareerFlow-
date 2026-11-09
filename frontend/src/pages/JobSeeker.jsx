@@ -1,9 +1,8 @@
-
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Briefcase, X, Trash2, Undo2, Plus, Eye, Pencil,
   Search, ChevronLeft, ChevronRight, MapPin,
-  GraduationCap, Send, Sparkles,
+  GraduationCap, Send, Sparkles, Mail, Phone,
 } from "lucide-react";
 import { api, getSession } from "../lib/api.js";
 import "./Dashboard.css";
@@ -128,10 +127,16 @@ function Modal({ title, children, onClose }) {
     <div
       className="overlay"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
       }}
     >
-      <div className="modal card" role="dialog" aria-modal="true">
+      <div
+        className="modal card"
+        role="dialog"
+        aria-modal="true"
+      >
         <div className="modalhead">
           <h2>{title}</h2>
           <button
@@ -179,7 +184,8 @@ function ProfileForm({ initial, onClose, onSaved }) {
 
     if (
       form.skills.some(
-        (skill) => skill.toLowerCase() === value.toLowerCase()
+        (skill) =>
+          skill.toLowerCase() === value.toLowerCase()
       )
     ) {
       setSkillInput("");
@@ -224,7 +230,8 @@ function ProfileForm({ initial, onClose, onSaved }) {
         university: form.university.trim(),
         degree: form.degree,
         field: form.field.trim(),
-        gpa: form.gpa === "" ? null : Number(form.gpa),
+        gpa:
+          form.gpa === "" ? null : Number(form.gpa),
         graduationYear:
           form.graduationYear === ""
             ? null
@@ -235,7 +242,12 @@ function ProfileForm({ initial, onClose, onSaved }) {
         resumeLink: form.resumeLink.trim(),
       };
 
-      const saved = await request("PUT", "/profile", payload);
+      const saved = await request(
+        "PUT",
+        "/profile",
+        payload
+      );
+
       onSaved(saved);
     } catch (err) {
       setError(errorMessage(err));
@@ -251,7 +263,9 @@ function ProfileForm({ initial, onClose, onSaved }) {
           <span className="eyebrow">
             CAREERFLOW / JOB SEEKER
           </span>
+
           <h1>Edit My Profile</h1>
+
           <p>
             Keep your qualifications and skills updated
             so employers can learn more about you.
@@ -259,8 +273,13 @@ function ProfileForm({ initial, onClose, onSaved }) {
         </div>
       </div>
 
-      <form className="card profileform stack" onSubmit={submit}>
-        {error && <div className="error">{error}</div>}
+      <form
+        className="card profileform stack"
+        onSubmit={submit}
+      >
+        {error && (
+          <div className="error">{error}</div>
+        )}
 
         <div className="formgrid">
           <label>
@@ -268,7 +287,9 @@ function ProfileForm({ initial, onClose, onSaved }) {
             <input
               required
               value={form.name}
-              onChange={(e) => set("name", e.target.value)}
+              onChange={(e) =>
+                set("name", e.target.value)
+              }
             />
           </label>
 
@@ -276,7 +297,9 @@ function ProfileForm({ initial, onClose, onSaved }) {
             University
             <input
               value={form.university}
-              onChange={(e) => set("university", e.target.value)}
+              onChange={(e) =>
+                set("university", e.target.value)
+              }
               placeholder="University of Ruhuna"
             />
           </label>
@@ -285,10 +308,15 @@ function ProfileForm({ initial, onClose, onSaved }) {
             Degree
             <select
               value={form.degree}
-              onChange={(e) => set("degree", e.target.value)}
+              onChange={(e) =>
+                set("degree", e.target.value)
+              }
             >
               {DEGREES.map((degree) => (
-                <option key={degree} value={degree}>
+                <option
+                  key={degree}
+                  value={degree}
+                >
                   {degree}
                 </option>
               ))}
@@ -300,7 +328,9 @@ function ProfileForm({ initial, onClose, onSaved }) {
             <input
               required
               value={form.field}
-              onChange={(e) => set("field", e.target.value)}
+              onChange={(e) =>
+                set("field", e.target.value)
+              }
               placeholder="Computer Engineering"
             />
           </label>
@@ -313,7 +343,9 @@ function ProfileForm({ initial, onClose, onSaved }) {
               max="4"
               step="0.01"
               value={form.gpa}
-              onChange={(e) => set("gpa", e.target.value)}
+              onChange={(e) =>
+                set("gpa", e.target.value)
+              }
             />
           </label>
 
@@ -337,7 +369,9 @@ function ProfileForm({ initial, onClose, onSaved }) {
             rows={3}
             maxLength={1000}
             value={form.bio}
-            onChange={(e) => set("bio", e.target.value)}
+            onChange={(e) =>
+              set("bio", e.target.value)
+            }
             placeholder="Tell employers about yourself..."
           />
         </label>
@@ -348,17 +382,21 @@ function ProfileForm({ initial, onClose, onSaved }) {
             rows={3}
             maxLength={1500}
             value={form.experience}
-            onChange={(e) => set("experience", e.target.value)}
+            onChange={(e) =>
+              set("experience", e.target.value)
+            }
             placeholder="Describe your projects..."
           />
         </label>
 
         <label>
-          Resume Link
+          Resume Link/ CV 
           <input
             type="url"
             value={form.resumeLink}
-            onChange={(e) => set("resumeLink", e.target.value)}
+            onChange={(e) =>
+              set("resumeLink", e.target.value)
+            }
             placeholder="https://..."
           />
         </label>
@@ -368,7 +406,9 @@ function ProfileForm({ initial, onClose, onSaved }) {
           <div className="row">
             <input
               value={skillInput}
-              onChange={(e) => setSkillInput(e.target.value)}
+              onChange={(e) =>
+                setSkillInput(e.target.value)
+              }
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -377,6 +417,7 @@ function ProfileForm({ initial, onClose, onSaved }) {
               }}
               placeholder="React, Python, SQL..."
             />
+
             <button
               type="button"
               className="secondary"
@@ -397,7 +438,9 @@ function ProfileForm({ initial, onClose, onSaved }) {
                 onClick={() =>
                   set(
                     "skills",
-                    form.skills.filter((item) => item !== skill)
+                    form.skills.filter(
+                      (item) => item !== skill
+                    )
                   )
                 }
               >
@@ -415,7 +458,11 @@ function ProfileForm({ initial, onClose, onSaved }) {
           >
             Cancel
           </button>
-          <button type="submit" disabled={saving}>
+
+          <button
+            type="submit"
+            disabled={saving}
+          >
             {saving ? "Saving..." : "Save Profile"}
           </button>
         </div>
@@ -428,15 +475,23 @@ function ProfileForm({ initial, onClose, onSaved }) {
 // JOB DETAILS
 // ================================================
 
-function JobDetails({ job, applied, onClose, onApply }) {
+function JobDetails({
+  job,
+  applied,
+  onClose,
+  onApply,
+}) {
   return (
     <Modal title="Job Details" onClose={onClose}>
       <div className="stack">
-        <span className={`status status-${job.status}`}>
+        <span
+          className={`status status-${job.status}`}
+        >
           {job.status}
         </span>
 
         <h2>{job.title}</h2>
+
         <p>
           {job.company} ·{" "}
           {job.location || "Location not specified"}
@@ -447,6 +502,7 @@ function JobDetails({ job, applied, onClose, onApply }) {
             <small>Salary Range</small>
             <b>{job.salaryRange || "Not specified"}</b>
           </div>
+
           <div>
             <small>Minimum GPA</small>
             <b>
@@ -455,22 +511,29 @@ function JobDetails({ job, applied, onClose, onApply }) {
                 : job.minimumGpa}
             </b>
           </div>
+
           <div>
             <small>Preferred Degree</small>
             <b>{job.preferredDegree}</b>
           </div>
+
           <div>
             <small>Openings</small>
             <b>{job.openings}</b>
           </div>
+
           <div>
             <small>Closing Date</small>
-            <b>{job.closingDate || "Not specified"}</b>
+            <b>
+              {job.closingDate || "Not specified"}
+            </b>
           </div>
         </div>
 
         <h3>Job Description</h3>
-        <p className="prewrap">{job.description}</p>
+        <p className="prewrap">
+          {job.description}
+        </p>
 
         <h3>Required Skills</h3>
         <Tags items={job.requirements} />
@@ -483,12 +546,17 @@ function JobDetails({ job, applied, onClose, onApply }) {
           >
             Close
           </button>
+
           <button
             type="button"
-            disabled={applied || job.status !== "open"}
+            disabled={
+              applied || job.status !== "open"
+            }
             onClick={() => onApply(job)}
           >
-            {applied ? "Already Applied" : "Apply Now"}
+            {applied
+              ? "Already Applied"
+              : "Apply Now"}
           </button>
         </div>
       </div>
@@ -497,16 +565,70 @@ function JobDetails({ job, applied, onClose, onApply }) {
 }
 
 // ================================================
-// APPLY MODAL
+// APPLY MODAL WITH CONTACT DETAILS
 // ================================================
 
 function ApplyModal({ job, onClose, onDone }) {
+  // Automatically fill registered email.
+  const sessionUser = getSession()?.user || {};
+
+  const [contactEmail, setContactEmail] = useState(
+    sessionUser.email || ""
+  );
+
+  const [contactPhone, setContactPhone] = useState(
+    sessionUser.phone ||
+    sessionUser.phoneNumber ||
+    ""
+  );
+
   const [coverNote, setCoverNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  const validEmail = (email) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  const validPhone = (phone) => {
+    const normalized = phone.replace(
+      /[\s().-]/g,
+      ""
+    );
+
+    return /^\+?[0-9]{7,15}$/.test(normalized);
+  };
+
   const submit = async (event) => {
     event.preventDefault();
+    setError("");
+
+    const email = contactEmail.trim();
+    const phone = contactPhone.trim();
+
+    if (!email) {
+      setError("Contact email is required.");
+      return;
+    }
+
+    if (
+      email.length > 254 ||
+      !validEmail(email)
+    ) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    if (!phone) {
+      setError("Contact phone number is required.");
+      return;
+    }
+
+    if (!validPhone(phone)) {
+      setError(
+        "Please enter a valid phone number, e.g. 0771234567 or +94771234567."
+      );
+      return;
+    }
 
     if (coverNote.length > 1000) {
       setError("Cover note is too long.");
@@ -514,14 +636,18 @@ function ApplyModal({ job, onClose, onDone }) {
     }
 
     setSaving(true);
-    setError("");
 
     try {
       await request(
         "POST",
         `/applications/${job._id}`,
-        { coverNote: coverNote.trim() }
+        {
+          contactEmail: email.toLowerCase(),
+          contactPhone: phone,
+          coverNote: coverNote.trim(),
+        }
       );
+
       onDone();
     } catch (err) {
       setError(errorMessage(err));
@@ -531,38 +657,119 @@ function ApplyModal({ job, onClose, onDone }) {
   };
 
   return (
-    <Modal title={`Apply for ${job.title}`} onClose={onClose}>
-      <form className="stack" onSubmit={submit}>
+    <Modal
+      title={`Apply for ${job.title}`}
+      onClose={onClose}
+    >
+      <form
+        className="stack"
+        onSubmit={submit}
+      >
         <p>
           Company: <b>{job.company}</b>
         </p>
 
-        {error && <div className="error">{error}</div>}
+        <p>
+          Enter your contact information so the
+          employer can reach you for interviews
+          and recruitment updates.
+        </p>
+
+        {error && (
+          <div
+            className="error"
+            role="alert"
+          >
+            {error}
+          </div>
+        )}
+
+        <label>
+          <Mail
+            size={16}
+            style={{
+              display: "inline",
+              verticalAlign: "middle",
+              marginRight: 6,
+            }}
+          />
+          Contact Email *
+          <input
+            type="email"
+            required
+            maxLength={254}
+            autoComplete="email"
+            value={contactEmail}
+            onChange={(e) =>
+              setContactEmail(e.target.value)
+            }
+            placeholder="example@gmail.com"
+          />
+        </label>
+
+        <label>
+          <Phone
+            size={16}
+            style={{
+              display: "inline",
+              verticalAlign: "middle",
+              marginRight: 6,
+            }}
+          />
+          Phone Number *
+          <input
+            type="tel"
+            required
+            autoComplete="tel"
+            value={contactPhone}
+            onChange={(e) =>
+              setContactPhone(e.target.value)
+            }
+            placeholder="+94 77 123 4567"
+          />
+        </label>
+
+        <small>
+          Your email and phone number will be
+          shared with the employer for
+          recruitment-related communication.
+        </small>
 
         <label>
           Cover Note (Optional)
           <textarea
-            rows={5}
+            rows={4}
             maxLength={1000}
             value={coverNote}
-            onChange={(e) => setCoverNote(e.target.value)}
+            onChange={(e) =>
+              setCoverNote(e.target.value)
+            }
             placeholder="Explain why you are suitable..."
           />
         </label>
 
-        <small>{coverNote.length}/1000 characters</small>
+        <small>
+          {coverNote.length}/1000 characters
+        </small>
 
         <div className="row end">
           <button
             type="button"
             className="secondary"
             onClick={onClose}
+            disabled={saving}
           >
             Cancel
           </button>
-          <button type="submit" disabled={saving}>
+
+          <button
+            type="submit"
+            disabled={saving}
+          >
             <Send size={16} />
-            {saving ? "Submitting..." : "Submit Application"}
+            {saving
+              ? "Submitting..."
+              : "Submit Application"}
           </button>
         </div>
       </form>
@@ -621,7 +828,8 @@ export default function JobSeeker() {
 
     if (jobsResult.status === "fulfilled") {
       setJobs(
-        listOf(jobsResult.value, "jobs").map(normalizeJob)
+        listOf(jobsResult.value, "jobs")
+          .map(normalizeJob)
       );
     }
 
@@ -635,8 +843,12 @@ export default function JobSeeker() {
     }
 
     const failures = results
-      .filter((result) => result.status === "rejected")
-      .map((result) => errorMessage(result.reason));
+      .filter(
+        (result) => result.status === "rejected"
+      )
+      .map(
+        (result) => errorMessage(result.reason)
+      );
 
     if (failures.length) {
       setError(
@@ -672,7 +884,11 @@ export default function JobSeeker() {
         "PATCH",
         `/applications/${applicationId}/withdraw`
       );
-      setNotice("Application withdrawn successfully.");
+
+      setNotice(
+        "Application withdrawn successfully."
+      );
+
       await load();
     } catch (err) {
       setError(errorMessage(err));
@@ -693,7 +909,11 @@ export default function JobSeeker() {
         "DELETE",
         `/applications/${applicationId}`
       );
-      setNotice("Application deleted successfully.");
+
+      setNotice(
+        "Application deleted successfully."
+      );
+
       await load();
     } catch (err) {
       setError(errorMessage(err));
@@ -716,24 +936,37 @@ export default function JobSeeker() {
         .toLowerCase();
 
       return (
-        (!query || text.includes(query.toLowerCase())) &&
+        (!query ||
+          text.includes(
+            query.toLowerCase()
+          )) &&
         (!location ||
           (job.location || "")
             .toLowerCase()
-            .includes(location.toLowerCase())) &&
+            .includes(
+              location.toLowerCase()
+            )) &&
         (!degree ||
           job.preferredDegree === "Any" ||
           job.preferredDegree === degree) &&
-        (!status || job.status === status)
+        (!status ||
+          job.status === status)
       );
     })
     .sort((a, b) => {
       if (sort === "title") {
-        return a.title.localeCompare(b.title);
+        return a.title.localeCompare(
+          b.title
+        );
       }
 
-      const first = new Date(a.createdAt || 0).getTime();
-      const second = new Date(b.createdAt || 0).getTime();
+      const first = new Date(
+        a.createdAt || 0
+      ).getTime();
+
+      const second = new Date(
+        b.createdAt || 0
+      ).getTime();
 
       return sort === "oldest"
         ? first - second
@@ -742,10 +975,15 @@ export default function JobSeeker() {
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredJobs.length / pageSize)
+    Math.ceil(
+      filteredJobs.length / pageSize
+    )
   );
 
-  const currentPage = Math.min(page, totalPages);
+  const currentPage = Math.min(
+    page,
+    totalPages
+  );
 
   const visibleJobs = filteredJobs.slice(
     (currentPage - 1) * pageSize,
@@ -758,13 +996,18 @@ export default function JobSeeker() {
         initial={{
           ...EMPTY_PROFILE,
           ...(profile || {}),
-          name: profile?.name || userName,
+          name:
+            profile?.name || userName,
         }}
-        onClose={() => setEditing(false)}
+        onClose={() =>
+          setEditing(false)
+        }
         onSaved={(saved) => {
           setProfile(saved);
           setEditing(false);
-          setNotice("Profile saved successfully.");
+          setNotice(
+            "Profile saved successfully."
+          );
           load();
         }}
       />
@@ -780,34 +1023,45 @@ export default function JobSeeker() {
           </span>
 
           <h1>
-            Welcome, {profile?.name || userName}!
+            Welcome,{" "}
+            {profile?.name || userName}!
           </h1>
 
           <p>
-            Explore job opportunities, apply for jobs,
-            and track your applications.
+            Explore job opportunities,
+            apply for jobs, and track
+            your applications.
           </p>
         </div>
 
         <button
           type="button"
           className="secondary"
-          onClick={() => setEditing(true)}
+          onClick={() =>
+            setEditing(true)
+          }
         >
           <Pencil size={17} />
           Edit Profile
         </button>
       </div>
 
-      {error && <div className="error">{error}</div>}
+      {error && (
+        <div className="error">
+          {error}
+        </div>
+      )}
 
       {notice && (
         <div className="card">
           <p>{notice}</p>
+
           <button
             type="button"
             className="secondary"
-            onClick={() => setNotice("")}
+            onClick={() =>
+              setNotice("")
+            }
           >
             Dismiss
           </button>
@@ -827,7 +1081,9 @@ export default function JobSeeker() {
 
         <Stat
           icon={Sparkles}
-          value={profile?.skills?.length || 0}
+          value={
+            profile?.skills?.length || 0
+          }
           label="Skills Listed"
         />
 
@@ -843,7 +1099,9 @@ export default function JobSeeker() {
       <div className="tracker">
         {applications.length ? (
           applications.map((app) => {
-            const stage = STAGES.indexOf(app.status);
+            const stage = STAGES.indexOf(
+              app.status
+            );
 
             return (
               <div
@@ -858,11 +1116,13 @@ export default function JobSeeker() {
                   </span>
 
                   <h3>
-                    {app.internship?.title || "Job"}
+                    {app.internship?.title ||
+                      "Job"}
                   </h3>
 
                   <p>
-                    {app.internship?.company || "Company"}
+                    {app.internship?.company ||
+                      "Company"}
                   </p>
 
                   <small>
@@ -877,15 +1137,19 @@ export default function JobSeeker() {
 
                 <div>
                   <div className="stagebar">
-                    {STAGES.map((item, index) => (
-                      <i
-                        key={item}
-                        title={item}
-                        className={
-                          stage >= index ? "done" : ""
-                        }
-                      />
-                    ))}
+                    {STAGES.map(
+                      (item, index) => (
+                        <i
+                          key={item}
+                          title={item}
+                          className={
+                            stage >= index
+                              ? "done"
+                              : ""
+                          }
+                        />
+                      )
+                    )}
                   </div>
 
                   <div className="row end appactions">
@@ -893,22 +1157,29 @@ export default function JobSeeker() {
                       "withdrawn",
                       "rejected",
                       "offered",
-                    ].includes(app.status) && (
+                    ].includes(
+                      app.status
+                    ) && (
                       <button
                         type="button"
                         className="secondary"
-                        onClick={() => withdraw(app._id)}
+                        onClick={() =>
+                          withdraw(app._id)
+                        }
                       >
                         <Undo2 size={16} />
                         Withdraw
                       </button>
                     )}
 
-                    {app.status === "withdrawn" && (
+                    {app.status ===
+                      "withdrawn" && (
                       <button
                         type="button"
                         className="danger"
-                        onClick={() => remove(app._id)}
+                        onClick={() =>
+                          remove(app._id)
+                        }
                       >
                         <Trash2 size={16} />
                         Delete
@@ -926,13 +1197,14 @@ export default function JobSeeker() {
         )}
       </div>
 
-      {/* JOB EXPLORATION - NO SMART MATCHING */}
+      {/* EXPLORE JOBS */}
 
       <h2>Explore Open Jobs</h2>
 
       <div className="card filters">
         <div className="searchbox">
           <Search size={18} />
+
           <input
             value={query}
             onChange={(e) => {
@@ -959,9 +1231,15 @@ export default function JobSeeker() {
             setPage(1);
           }}
         >
-          <option value="">All Degrees</option>
+          <option value="">
+            All Degrees
+          </option>
+
           {DEGREES.map((item) => (
-            <option key={item} value={item}>
+            <option
+              key={item}
+              value={item}
+            >
               {item}
             </option>
           ))}
@@ -974,18 +1252,32 @@ export default function JobSeeker() {
             setPage(1);
           }}
         >
-          <option value="">All Statuses</option>
-          <option value="open">Open</option>
-          <option value="closed">Closed</option>
+          <option value="">
+            All Statuses
+          </option>
+          <option value="open">
+            Open
+          </option>
+          <option value="closed">
+            Closed
+          </option>
         </select>
 
         <select
           value={sort}
-          onChange={(e) => setSort(e.target.value)}
+          onChange={(e) =>
+            setSort(e.target.value)
+          }
         >
-          <option value="newest">Newest First</option>
-          <option value="oldest">Oldest First</option>
-          <option value="title">Title A-Z</option>
+          <option value="newest">
+            Newest First
+          </option>
+          <option value="oldest">
+            Oldest First
+          </option>
+          <option value="title">
+            Title A-Z
+          </option>
         </select>
       </div>
 
@@ -1020,7 +1312,8 @@ export default function JobSeeker() {
                 <p>
                   <MapPin size={14} />{" "}
                   {job.company} ·{" "}
-                  {job.location || "Not specified"}
+                  {job.location ||
+                    "Not specified"}
                 </p>
 
                 <p className="clamp">
@@ -1028,14 +1321,21 @@ export default function JobSeeker() {
                 </p>
 
                 <Tags
-                  items={job.requirements.slice(0, 5)}
+                  items={
+                    job.requirements.slice(
+                      0,
+                      5
+                    )
+                  }
                 />
 
                 <div className="row between jobactions">
                   <button
                     type="button"
                     className="secondary"
-                    onClick={() => setViewJob(job)}
+                    onClick={() =>
+                      setViewJob(job)
+                    }
                   >
                     <Eye size={16} />
                     Details
@@ -1044,12 +1344,18 @@ export default function JobSeeker() {
                   <button
                     type="button"
                     disabled={
-                      appliedIds.includes(job._id) ||
+                      appliedIds.includes(
+                        job._id
+                      ) ||
                       job.status !== "open"
                     }
-                    onClick={() => startApply(job)}
+                    onClick={() =>
+                      startApply(job)
+                    }
                   >
-                    {appliedIds.includes(job._id)
+                    {appliedIds.includes(
+                      job._id
+                    )
                       ? "Applied"
                       : "Apply"}
                   </button>
@@ -1066,17 +1372,23 @@ export default function JobSeeker() {
 
           <div className="pagination">
             <span>
-              {filteredJobs.length} results · Page{" "}
-              {currentPage} of {totalPages}
+              {filteredJobs.length} results
+              {" · "}Page{" "}
+              {currentPage} of{" "}
+              {totalPages}
             </span>
 
             <div className="row">
               <button
                 type="button"
                 className="secondary iconbtn"
-                disabled={currentPage === 1}
+                disabled={
+                  currentPage === 1
+                }
                 onClick={() =>
-                  setPage(currentPage - 1)
+                  setPage(
+                    currentPage - 1
+                  )
                 }
               >
                 <ChevronLeft />
@@ -1085,9 +1397,13 @@ export default function JobSeeker() {
               <button
                 type="button"
                 className="secondary iconbtn"
-                disabled={currentPage === totalPages}
+                disabled={
+                  currentPage === totalPages
+                }
                 onClick={() =>
-                  setPage(currentPage + 1)
+                  setPage(
+                    currentPage + 1
+                  )
                 }
               >
                 <ChevronRight />
@@ -1100,8 +1416,14 @@ export default function JobSeeker() {
       {viewJob && (
         <JobDetails
           job={viewJob}
-          applied={appliedIds.includes(viewJob._id)}
-          onClose={() => setViewJob(null)}
+          applied={
+            appliedIds.includes(
+              viewJob._id
+            )
+          }
+          onClose={() =>
+            setViewJob(null)
+          }
           onApply={startApply}
         />
       )}
@@ -1109,10 +1431,16 @@ export default function JobSeeker() {
       {applyJob && (
         <ApplyModal
           job={applyJob}
-          onClose={() => setApplyJob(null)}
+          onClose={() =>
+            setApplyJob(null)
+          }
           onDone={async () => {
             setApplyJob(null);
-            setNotice("Application submitted successfully.");
+
+            setNotice(
+              "Application submitted successfully."
+            );
+
             await load();
           }}
         />

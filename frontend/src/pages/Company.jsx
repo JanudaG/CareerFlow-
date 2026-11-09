@@ -1,41 +1,22 @@
-import React, {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  Briefcase,
-  Plus,
-  X,
-  Eye,
-  Pencil,
-  Trash2,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  MapPin,
-  Users,
-  CheckCircle,
+  Briefcase, Plus, X, Eye, Pencil, Trash2, Search,
+  ChevronLeft, ChevronRight, MapPin, Users,
+  CheckCircle, Mail, Phone, GraduationCap,
+  ExternalLink, UserRound, FileText,
 } from "lucide-react";
 import { api, getSession } from "../lib/api.js";
 import "./Dashboard.css";
 
 const DEGREES = [
-  "Any",
-  "Certificate",
-  "Diploma",
-  "Bachelor",
-  "Master",
-  "PhD",
+  "Any", "Certificate", "Diploma",
+  "Bachelor", "Master", "PhD",
 ];
 
 const STAGES = [
-  "submitted",
-  "reviewing",
-  "shortlisted",
-  "interview",
-  "offered",
-  "rejected",
+  "submitted", "reviewing", "shortlisted",
+  "interview", "offered", "rejected",
 ];
 
 const EMPTY_JOB = {
@@ -56,9 +37,7 @@ function getUserName() {
   const user = getSession()?.user || {};
   return (
     user.name ||
-    [user.firstName, user.lastName]
-      .filter(Boolean)
-      .join(" ") ||
+    [user.firstName, user.lastName].filter(Boolean).join(" ") ||
     user.username ||
     "User"
   );
@@ -84,11 +63,7 @@ function errorMessage(error) {
 }
 
 async function request(method, url, data) {
-  const response = await api.request({
-    method,
-    url,
-    data,
-  });
+  const response = await api.request({ method, url, data });
   return unwrap(response);
 }
 
@@ -153,9 +128,7 @@ function Modal({ title, children, onClose }) {
     <div
       className="overlay"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
+        if (event.target === event.currentTarget) onClose();
       }}
     >
       <div className="modal card" role="dialog" aria-modal="true">
@@ -176,20 +149,21 @@ function Modal({ title, children, onClose }) {
   );
 }
 
+// ================================================
+// JOB FORM - CREATE / EDIT
+// ================================================
+
 function JobForm({ initial, onClose, onSaved }) {
   const [form, setForm] = useState({
     ...EMPTY_JOB,
     ...(initial || {}),
     requirements:
-      initial?.requirements ||
-      initial?.requiredSkills ||
-      [],
+      initial?.requirements || initial?.requiredSkills || [],
   });
 
   const [skillInput, setSkillInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-
   const editing = Boolean(initial?._id);
 
   const set = (field, value) => {
@@ -205,8 +179,7 @@ function JobForm({ initial, onClose, onSaved }) {
 
     if (
       form.requirements.some(
-        (item) =>
-          item.toLowerCase() === value.toLowerCase()
+        (item) => item.toLowerCase() === value.toLowerCase()
       )
     ) {
       setSkillInput("");
@@ -320,9 +293,7 @@ function JobForm({ initial, onClose, onSaved }) {
             Salary Range
             <input
               value={form.salaryRange}
-              onChange={(e) =>
-                set("salaryRange", e.target.value)
-              }
+              onChange={(e) => set("salaryRange", e.target.value)}
               placeholder="LKR 50,000 - 80,000"
             />
           </label>
@@ -331,9 +302,7 @@ function JobForm({ initial, onClose, onSaved }) {
             Preferred Field
             <input
               value={form.preferredField}
-              onChange={(e) =>
-                set("preferredField", e.target.value)
-              }
+              onChange={(e) => set("preferredField", e.target.value)}
               placeholder="Computer Engineering"
             />
           </label>
@@ -342,9 +311,7 @@ function JobForm({ initial, onClose, onSaved }) {
             Preferred Degree
             <select
               value={form.preferredDegree}
-              onChange={(e) =>
-                set("preferredDegree", e.target.value)
-              }
+              onChange={(e) => set("preferredDegree", e.target.value)}
             >
               {DEGREES.map((degree) => (
                 <option key={degree} value={degree}>
@@ -362,9 +329,7 @@ function JobForm({ initial, onClose, onSaved }) {
               max="4"
               step="0.01"
               value={form.minimumGpa}
-              onChange={(e) =>
-                set("minimumGpa", e.target.value)
-              }
+              onChange={(e) => set("minimumGpa", e.target.value)}
             />
           </label>
 
@@ -374,9 +339,7 @@ function JobForm({ initial, onClose, onSaved }) {
               type="number"
               min="1"
               value={form.openings}
-              onChange={(e) =>
-                set("openings", e.target.value)
-              }
+              onChange={(e) => set("openings", e.target.value)}
             />
           </label>
 
@@ -385,9 +348,7 @@ function JobForm({ initial, onClose, onSaved }) {
             <input
               type="date"
               value={form.closingDate}
-              onChange={(e) =>
-                set("closingDate", e.target.value)
-              }
+              onChange={(e) => set("closingDate", e.target.value)}
             />
           </label>
 
@@ -395,9 +356,7 @@ function JobForm({ initial, onClose, onSaved }) {
             Job Status
             <select
               value={form.status}
-              onChange={(e) =>
-                set("status", e.target.value)
-              }
+              onChange={(e) => set("status", e.target.value)}
             >
               <option value="open">Open</option>
               <option value="closed">Closed</option>
@@ -411,9 +370,7 @@ function JobForm({ initial, onClose, onSaved }) {
             required
             rows={5}
             value={form.description}
-            onChange={(e) =>
-              set("description", e.target.value)
-            }
+            onChange={(e) => set("description", e.target.value)}
             placeholder="Describe the job responsibilities..."
           />
         </label>
@@ -423,9 +380,7 @@ function JobForm({ initial, onClose, onSaved }) {
           <div className="row">
             <input
               value={skillInput}
-              onChange={(e) =>
-                setSkillInput(e.target.value)
-              }
+              onChange={(e) => setSkillInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -450,6 +405,7 @@ function JobForm({ initial, onClose, onSaved }) {
               {skill}
               <button
                 type="button"
+                aria-label={`Remove ${skill}`}
                 onClick={() =>
                   set(
                     "requirements",
@@ -473,7 +429,6 @@ function JobForm({ initial, onClose, onSaved }) {
           >
             Cancel
           </button>
-
           <button type="submit" disabled={saving}>
             {saving
               ? "Saving..."
@@ -486,6 +441,10 @@ function JobForm({ initial, onClose, onSaved }) {
     </Modal>
   );
 }
+
+// ================================================
+// JOB DETAILS
+// ================================================
 
 function JobDetails({ job, onClose, onEdit, onDelete }) {
   return (
@@ -539,7 +498,6 @@ function JobDetails({ job, onClose, onEdit, onDelete }) {
           >
             <Pencil size={16} /> Edit
           </button>
-
           <button
             type="button"
             className="danger"
@@ -552,6 +510,233 @@ function JobDetails({ job, onClose, onEdit, onDelete }) {
     </Modal>
   );
 }
+
+// ================================================
+// APPLICANT FULL PROFILE MODAL - NEW
+// ================================================
+
+function ApplicantProfile({ application, onClose }) {
+  const student = application.student || {};
+
+  const email =
+    application.contactEmail ||
+    student.email ||
+    "";
+
+  const phone =
+    application.contactPhone ||
+    "";
+
+  const skills = Array.isArray(student.skills)
+    ? student.skills
+    : [];
+
+  const resume = student.resumeLink || "";
+
+  // Only allow HTTP/HTTPS resume links.
+  const validResume =
+    /^https?:\/\/\S+$/i.test(resume);
+
+  const detailItem = (label, value) => (
+    <div>
+      <small>{label}</small>
+      <p style={{ marginTop: 5 }}>
+        <b>
+          {value !== null &&
+          value !== undefined &&
+          value !== ""
+            ? value
+            : "Not provided"}
+        </b>
+      </p>
+    </div>
+  );
+
+  return (
+    <Modal title="Applicant Profile" onClose={onClose}>
+      <div
+        className="stack"
+        style={{ maxHeight: "75vh", overflowY: "auto" }}
+      >
+        <div
+          className="row"
+          style={{ alignItems: "center", gap: 12 }}
+        >
+          <UserRound size={38} />
+
+          <div>
+            <h2 style={{ margin: 0 }}>
+              {student.name || "Candidate"}
+            </h2>
+            <p style={{ margin: "6px 0" }}>
+              {student.field || "Field not provided"}
+            </p>
+            <span
+              className={`status status-${application.status}`}
+            >
+              {application.status}
+            </span>
+          </div>
+        </div>
+
+        <p>
+          Applied for:{" "}
+          <b>
+            {application.internship?.title || "Job"}
+          </b>
+        </p>
+
+        <hr />
+
+        <h3>
+          <GraduationCap
+            size={18}
+            style={{ display: "inline", marginRight: 6 }}
+          />
+          Education Details
+        </h3>
+
+        <div className="detailgrid">
+          {detailItem("University", student.university)}
+          {detailItem("Degree", student.degree)}
+          {detailItem("Field of Study", student.field)}
+          {detailItem(
+            "GPA",
+            student.gpa != null
+              ? `${student.gpa} / 4.00`
+              : ""
+          )}
+        </div>
+
+        <hr />
+
+        <h3>Professional Summary</h3>
+        <p className="prewrap">
+          {student.bio || "No professional summary provided."}
+        </p>
+
+        <h3>Skills</h3>
+        {skills.length ? (
+          <Tags items={skills} />
+        ) : (
+          <p>No skills listed.</p>
+        )}
+
+        <h3>Experience / Projects</h3>
+        <p className="prewrap">
+          {student.experience ||
+            "No experience or projects provided."}
+        </p>
+
+        <hr />
+
+        <h3>
+          <Mail
+            size={18}
+            style={{ display: "inline", marginRight: 6 }}
+          />
+          Contact Information
+        </h3>
+
+        <div className="detailgrid">
+          <div>
+            <small>Contact Email</small>
+            <p>
+              {email ? (
+                <a href={`mailto:${email}`}>
+                  {email}
+                </a>
+              ) : (
+                "Not provided"
+              )}
+            </p>
+          </div>
+
+          <div>
+            <small>Phone Number</small>
+            <p>
+              {phone ? (
+                <a href={`tel:${phone.replace(/[\s().-]/g, "")}`}>
+                  <Phone
+                    size={14}
+                    style={{
+                      display: "inline",
+                      marginRight: 5,
+                    }}
+                  />
+                  {phone}
+                </a>
+              ) : (
+                "Not provided"
+              )}
+            </p>
+          </div>
+        </div>
+
+        <hr />
+
+        <h3>
+          <FileText
+            size={18}
+            style={{ display: "inline", marginRight: 6 }}
+          />
+          Cover Note
+        </h3>
+
+        <p className="prewrap">
+          {application.coverNote ||
+            "No cover note submitted."}
+        </p>
+
+        <h3>Resume / CV</h3>
+
+        {validResume ? (
+          <a
+            href={resume}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <ExternalLink
+              size={16}
+              style={{
+                display: "inline",
+                marginRight: 6,
+              }}
+            />
+            View Applicant Resume
+          </a>
+        ) : (
+          <p>No resume link provided.</p>
+        )}
+
+        <hr />
+
+        <small>
+          Application submitted:{" "}
+          {application.createdAt
+            ? new Date(
+                application.createdAt
+              ).toLocaleDateString()
+            : "Not available"}
+        </small>
+
+        <div className="row end">
+          <button
+            type="button"
+            className="secondary"
+            onClick={onClose}
+          >
+            Close Profile
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+// ================================================
+// COMPANY DASHBOARD
+// ================================================
 
 export default function Company() {
   const userName = getUserName();
@@ -568,6 +753,9 @@ export default function Company() {
   const [deleteJob, setDeleteJob] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Selected applicant profile
+  const [viewApplicant, setViewApplicant] = useState(null);
+
   const [query, setQuery] = useState("");
   const [location, setLocation] = useState("");
   const [status, setStatus] = useState("");
@@ -582,7 +770,9 @@ export default function Company() {
 
     try {
       const result = await request("GET", "/jobs/mine");
-      const myJobs = listOf(result, "jobs").map(normalizeJob);
+
+      const myJobs = listOf(result, "jobs")
+        .map(normalizeJob);
 
       setJobs(myJobs);
 
@@ -610,7 +800,11 @@ export default function Company() {
 
       setApplications(allApplications);
 
-      if (groups.some((group) => group.status === "rejected")) {
+      if (
+        groups.some(
+          (group) => group.status === "rejected"
+        )
+      ) {
         setError(
           "Some applicant lists could not be loaded."
         );
@@ -664,7 +858,10 @@ export default function Company() {
     }
   };
 
-  const updateStage = async (applicationId, newStatus) => {
+  const updateStage = async (
+    applicationId,
+    newStatus
+  ) => {
     setError("");
 
     try {
@@ -706,8 +903,13 @@ export default function Company() {
         return a.title.localeCompare(b.title);
       }
 
-      const first = new Date(a.createdAt || 0).getTime();
-      const second = new Date(b.createdAt || 0).getTime();
+      const first = new Date(
+        a.createdAt || 0
+      ).getTime();
+
+      const second = new Date(
+        b.createdAt || 0
+      ).getTime();
 
       return sort === "oldest"
         ? first - second
@@ -737,18 +939,24 @@ export default function Company() {
           <h1>Welcome, {userName}!</h1>
 
           <p>
-            Post opportunities, manage job listings and
-            connect with talented candidates.
+            Post opportunities, manage job listings
+            and connect with talented candidates.
           </p>
         </div>
 
-        <button type="button" onClick={openCreate}>
+        <button
+          type="button"
+          onClick={openCreate}
+        >
           <Plus size={18} />
           Post New Job
         </button>
       </div>
 
-      {error && <div className="error">{error}</div>}
+      {error && (
+        <div className="error">{error}</div>
+      )}
+
       {notice && (
         <div className="card">
           <p>{notice}</p>
@@ -768,11 +976,13 @@ export default function Company() {
           value={jobs.length}
           label="Total Jobs"
         />
+
         <Stat
           icon={Users}
           value={applications.length}
           label="Applications"
         />
+
         <Stat
           icon={CheckCircle}
           value={
@@ -837,13 +1047,17 @@ export default function Company() {
         <>
           <div className="cards">
             {visibleJobs.map((job) => (
-              <div className="card jobcard" key={job._id}>
+              <div
+                className="card jobcard"
+                key={job._id}
+              >
                 <div className="row between">
                   <span
                     className={`status status-${job.status}`}
                   >
                     {job.status}
                   </span>
+
                   <small>
                     {job.createdAt
                       ? new Date(
@@ -856,8 +1070,7 @@ export default function Company() {
                 <h3>{job.title}</h3>
 
                 <p>
-                  <MapPin size={14} />
-                  {" "}
+                  <MapPin size={14} />{" "}
                   {job.location || "Not specified"}
                 </p>
 
@@ -875,7 +1088,8 @@ export default function Company() {
                     className="secondary"
                     onClick={() => setViewJob(job)}
                   >
-                    <Eye size={16} /> Details
+                    <Eye size={16} />
+                    Details
                   </button>
 
                   <button
@@ -883,7 +1097,8 @@ export default function Company() {
                     className="secondary"
                     onClick={() => openEdit(job)}
                   >
-                    <Pencil size={16} /> Edit
+                    <Pencil size={16} />
+                    Edit
                   </button>
 
                   <button
@@ -891,7 +1106,8 @@ export default function Company() {
                     className="danger"
                     onClick={() => openDelete(job)}
                   >
-                    <Trash2 size={16} /> Delete
+                    <Trash2 size={16} />
+                    Delete
                   </button>
                 </div>
               </div>
@@ -935,7 +1151,17 @@ export default function Company() {
         </>
       )}
 
+      {/* ======================================
+          APPLICATION PIPELINE
+          CLICKABLE APPLICANT NAMES
+         ====================================== */}
+
       <h2>Application Pipeline</h2>
+
+      <p>
+        Click an applicant's name to view their
+        full profile and contact information.
+      </p>
 
       <div className="table card">
         <div className="tr apptr th">
@@ -952,11 +1178,29 @@ export default function Company() {
         )}
 
         {applications.map((app) => (
-          <div className="tr apptr" key={app._id}>
+          <div
+            className="tr apptr"
+            key={app._id}
+          >
             <span>
-              <b>
+              <button
+                type="button"
+                onClick={() => setViewApplicant(app)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  padding: 0,
+                  color: "inherit",
+                  fontWeight: 700,
+                  textDecoration: "underline",
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+                title="View full applicant profile"
+              >
                 {app.student?.name || "Candidate"}
-              </b>
+              </button>
+
               <small>
                 {app.student?.field || ""}
                 {app.student?.gpa != null
@@ -1004,7 +1248,9 @@ export default function Company() {
           </div>
         ))}
       </div>
-      
+
+      {/* CREATE / EDIT JOB */}
+
       {showForm && (
         <JobForm
           initial={formJob}
@@ -1017,6 +1263,8 @@ export default function Company() {
         />
       )}
 
+      {/* JOB DETAILS */}
+
       {viewJob && (
         <JobDetails
           job={viewJob}
@@ -1025,6 +1273,17 @@ export default function Company() {
           onDelete={openDelete}
         />
       )}
+
+      {/* APPLICANT PROFILE - NEW */}
+
+      {viewApplicant && (
+        <ApplicantProfile
+          application={viewApplicant}
+          onClose={() => setViewApplicant(null)}
+        />
+      )}
+
+      {/* DELETE JOB CONFIRMATION */}
 
       {deleteJob && (
         <Modal
@@ -1056,7 +1315,9 @@ export default function Company() {
               disabled={deleting}
               onClick={removeJob}
             >
-              {deleting ? "Deleting..." : "Delete Job"}
+              {deleting
+                ? "Deleting..."
+                : "Delete Job"}
             </button>
           </div>
         </Modal>
