@@ -133,50 +133,6 @@
   box-shadow: 0 15px 28px rgba(117, 82, 231, 0.3);
 }
 
-.social-divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 25px 0 18px;
-  color: #a09bb6;
-  font-size: 12px;
-}
-
-.social-divider::before,
-.social-divider::after {
-  content: "";
-  height: 1px;
-  flex: 1;
-  background: #eae5f4;
-}
-
-.social-buttons {
-  display: flex;
-  gap: 12px;
-}
-
-.social-button {
-  flex: 1;
-  padding: 13px 8px;
-  border: 1px solid #e7e1f3;
-  border-radius: 12px;
-  background: white;
-  color: #514a70;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.social-button:hover {
-  background: #f7f2ff;
-  border-color: #bda5f4;
-  transform: translateY(-2px);
-}
-
-.social-register-role {
-  margin-top: 20px;
-}
 
 .login-register-link {
   text-align: center;
@@ -213,7 +169,5 @@
     font-size: 26px;
   }
 
-  .social-buttons {
-    flex-direction: column;
-  }
+  
 }

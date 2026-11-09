@@ -140,58 +140,7 @@ function Login() {
           </button>
         </form>
 
-        <div className="social-divider">
-          Or continue with
-        </div>
-
-        <div className="social-register-role">
-          <label htmlFor="social-role">
-            Select Role for Social Login
-          </label>
-
-          <select
-            id="social-role"
-            value={role}
-            onChange={(event) =>
-              setRole(event.target.value)
-            }
-          >
-            <option value="">
-              Select your role
-            </option>
-
-            <option value="jobseeker">
-              Job Seeker
-            </option>
-
-            <option value="employer">
-              Company
-            </option>
-          </select>
-        </div>
-
-        <div className="social-buttons">
-          <button
-            type="button"
-            className="social-button"
-            onClick={() =>
-              handleSocialLogin("Google")
-            }
-          >
-            🔵 Google
-          </button>
-
-          <button
-            type="button"
-            className="social-button"
-            onClick={() =>
-              handleSocialLogin("Facebook")
-            }
-          >
-            🔷 Facebook
-          </button>
-        </div>
-
+      
         <div className="login-register-link">
           Don't have an account?{" "}
           <Link to="/register">

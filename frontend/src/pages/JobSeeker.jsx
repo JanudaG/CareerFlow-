@@ -1,25 +1,19 @@
-import React, {
-  useCallback,useEffect,useState,
-} from "react";
-import {Briefcase,X,Trash2,Undo2,Plus,Eye,Pencil,Search,ChevronLeft,ChevronRight,MapPin,GraduationCap,Send,Sparkles,
+
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  Briefcase, X, Trash2, Undo2, Plus, Eye, Pencil,
+  Search, ChevronLeft, ChevronRight, MapPin,
+  GraduationCap, Send, Sparkles,
 } from "lucide-react";
 import { api, getSession } from "../lib/api.js";
 import "./Dashboard.css";
 
 const DEGREES = [
-  "Certificate",
-  "Diploma",
-  "Bachelor",
-  "Master",
-  "PhD",
+  "Certificate", "Diploma", "Bachelor", "Master", "PhD",
 ];
 
 const STAGES = [
-  "submitted",
-  "reviewing",
-  "shortlisted",
-  "interview",
-  "offered",
+  "submitted", "reviewing", "shortlisted", "interview", "offered",
 ];
 
 const EMPTY_PROFILE = {
@@ -37,12 +31,9 @@ const EMPTY_PROFILE = {
 
 function getUserName() {
   const user = getSession()?.user || {};
-
   return (
     user.name ||
-    [user.firstName, user.lastName]
-      .filter(Boolean)
-      .join(" ") ||
+    [user.firstName, user.lastName].filter(Boolean).join(" ") ||
     user.username ||
     "User"
   );
@@ -68,11 +59,7 @@ function errorMessage(error) {
 }
 
 async function request(method, url, data) {
-  const response = await api.request({
-    method,
-    url,
-    data,
-  });
+  const response = await api.request({ method, url, data });
   return unwrap(response);
 }
 
@@ -80,8 +67,7 @@ function normalizeJob(job) {
   return {
     ...job,
     _id: job?._id || job?.id,
-    requirements:
-      job?.requirements || job?.requiredSkills || [],
+    requirements: job?.requirements || job?.requiredSkills || [],
     preferredDegree: job?.preferredDegree || "Any",
     preferredField: job?.preferredField || "",
     minimumGpa: job?.minimumGpa ?? "",
@@ -100,7 +86,6 @@ function normalizeJob(job) {
 
 function normalizeApplication(app) {
   const job = app?.internship || app?.job;
-
   return {
     ...app,
     _id: app?._id || app?.id,
@@ -143,19 +128,12 @@ function Modal({ title, children, onClose }) {
     <div
       className="overlay"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
+        if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div
-        className="modal card"
-        role="dialog"
-        aria-modal="true"
-      >
+      <div className="modal card" role="dialog" aria-modal="true">
         <div className="modalhead">
           <h2>{title}</h2>
-
           <button
             type="button"
             className="iconbtn"
@@ -165,7 +143,6 @@ function Modal({ title, children, onClose }) {
             <X size={20} />
           </button>
         </div>
-
         {children}
       </div>
     </div>
@@ -202,8 +179,7 @@ function ProfileForm({ initial, onClose, onSaved }) {
 
     if (
       form.skills.some(
-        (skill) =>
-          skill.toLowerCase() === value.toLowerCase()
+        (skill) => skill.toLowerCase() === value.toLowerCase()
       )
     ) {
       setSkillInput("");
@@ -248,10 +224,7 @@ function ProfileForm({ initial, onClose, onSaved }) {
         university: form.university.trim(),
         degree: form.degree,
         field: form.field.trim(),
-        gpa:
-          form.gpa === ""
-            ? null
-            : Number(form.gpa),
+        gpa: form.gpa === "" ? null : Number(form.gpa),
         graduationYear:
           form.graduationYear === ""
             ? null
@@ -262,12 +235,7 @@ function ProfileForm({ initial, onClose, onSaved }) {
         resumeLink: form.resumeLink.trim(),
       };
 
-      const saved = await request(
-        "PUT",
-        "/profile",
-        payload
-      );
-
+      const saved = await request("PUT", "/profile", payload);
       onSaved(saved);
     } catch (err) {
       setError(errorMessage(err));
@@ -283,20 +251,15 @@ function ProfileForm({ initial, onClose, onSaved }) {
           <span className="eyebrow">
             CAREERFLOW / JOB SEEKER
           </span>
-
           <h1>Edit My Profile</h1>
-
           <p>
             Keep your qualifications and skills updated
-            to improve your job recommendations.
+            so employers can learn more about you.
           </p>
         </div>
       </div>
 
-      <form
-        className="card profileform stack"
-        onSubmit={submit}
-      >
+      <form className="card profileform stack" onSubmit={submit}>
         {error && <div className="error">{error}</div>}
 
         <div className="formgrid">
@@ -305,9 +268,7 @@ function ProfileForm({ initial, onClose, onSaved }) {
             <input
               required
               value={form.name}
-              onChange={(e) =>
-                set("name", e.target.value)
-              }
+              onChange={(e) => set("name", e.target.value)}
             />
           </label>
 
@@ -315,9 +276,7 @@ function ProfileForm({ initial, onClose, onSaved }) {
             University
             <input
               value={form.university}
-              onChange={(e) =>
-                set("university", e.target.value)
-              }
+              onChange={(e) => set("university", e.target.value)}
               placeholder="University of Ruhuna"
             />
           </label>
@@ -326,15 +285,10 @@ function ProfileForm({ initial, onClose, onSaved }) {
             Degree
             <select
               value={form.degree}
-              onChange={(e) =>
-                set("degree", e.target.value)
-              }
+              onChange={(e) => set("degree", e.target.value)}
             >
               {DEGREES.map((degree) => (
-                <option
-                  key={degree}
-                  value={degree}
-                >
+                <option key={degree} value={degree}>
                   {degree}
                 </option>
               ))}
@@ -346,9 +300,7 @@ function ProfileForm({ initial, onClose, onSaved }) {
             <input
               required
               value={form.field}
-              onChange={(e) =>
-                set("field", e.target.value)
-              }
+              onChange={(e) => set("field", e.target.value)}
               placeholder="Computer Engineering"
             />
           </label>
@@ -361,9 +313,7 @@ function ProfileForm({ initial, onClose, onSaved }) {
               max="4"
               step="0.01"
               value={form.gpa}
-              onChange={(e) =>
-                set("gpa", e.target.value)
-              }
+              onChange={(e) => set("gpa", e.target.value)}
             />
           </label>
 
@@ -387,9 +337,7 @@ function ProfileForm({ initial, onClose, onSaved }) {
             rows={3}
             maxLength={1000}
             value={form.bio}
-            onChange={(e) =>
-              set("bio", e.target.value)
-            }
+            onChange={(e) => set("bio", e.target.value)}
             placeholder="Tell employers about yourself..."
           />
         </label>
@@ -400,9 +348,7 @@ function ProfileForm({ initial, onClose, onSaved }) {
             rows={3}
             maxLength={1500}
             value={form.experience}
-            onChange={(e) =>
-              set("experience", e.target.value)
-            }
+            onChange={(e) => set("experience", e.target.value)}
             placeholder="Describe your projects..."
           />
         </label>
@@ -412,9 +358,7 @@ function ProfileForm({ initial, onClose, onSaved }) {
           <input
             type="url"
             value={form.resumeLink}
-            onChange={(e) =>
-              set("resumeLink", e.target.value)
-            }
+            onChange={(e) => set("resumeLink", e.target.value)}
             placeholder="https://..."
           />
         </label>
@@ -424,9 +368,7 @@ function ProfileForm({ initial, onClose, onSaved }) {
           <div className="row">
             <input
               value={skillInput}
-              onChange={(e) =>
-                setSkillInput(e.target.value)
-              }
+              onChange={(e) => setSkillInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -435,7 +377,6 @@ function ProfileForm({ initial, onClose, onSaved }) {
               }}
               placeholder="React, Python, SQL..."
             />
-
             <button
               type="button"
               className="secondary"
@@ -456,9 +397,7 @@ function ProfileForm({ initial, onClose, onSaved }) {
                 onClick={() =>
                   set(
                     "skills",
-                    form.skills.filter(
-                      (item) => item !== skill
-                    )
+                    form.skills.filter((item) => item !== skill)
                   )
                 }
               >
@@ -476,11 +415,7 @@ function ProfileForm({ initial, onClose, onSaved }) {
           >
             Cancel
           </button>
-
-          <button
-            type="submit"
-            disabled={saving}
-          >
+          <button type="submit" disabled={saving}>
             {saving ? "Saving..." : "Save Profile"}
           </button>
         </div>
@@ -493,23 +428,15 @@ function ProfileForm({ initial, onClose, onSaved }) {
 // JOB DETAILS
 // ================================================
 
-function JobDetails({
-  job,
-  applied,
-  onClose,
-  onApply,
-}) {
+function JobDetails({ job, applied, onClose, onApply }) {
   return (
     <Modal title="Job Details" onClose={onClose}>
       <div className="stack">
-        <span
-          className={`status status-${job.status}`}
-        >
+        <span className={`status status-${job.status}`}>
           {job.status}
         </span>
 
         <h2>{job.title}</h2>
-
         <p>
           {job.company} ·{" "}
           {job.location || "Location not specified"}
@@ -520,7 +447,6 @@ function JobDetails({
             <small>Salary Range</small>
             <b>{job.salaryRange || "Not specified"}</b>
           </div>
-
           <div>
             <small>Minimum GPA</small>
             <b>
@@ -529,17 +455,14 @@ function JobDetails({
                 : job.minimumGpa}
             </b>
           </div>
-
           <div>
             <small>Preferred Degree</small>
             <b>{job.preferredDegree}</b>
           </div>
-
           <div>
             <small>Openings</small>
             <b>{job.openings}</b>
           </div>
-
           <div>
             <small>Closing Date</small>
             <b>{job.closingDate || "Not specified"}</b>
@@ -560,7 +483,6 @@ function JobDetails({
           >
             Close
           </button>
-
           <button
             type="button"
             disabled={applied || job.status !== "open"}
@@ -600,7 +522,6 @@ function ApplyModal({ job, onClose, onDone }) {
         `/applications/${job._id}`,
         { coverNote: coverNote.trim() }
       );
-
       onDone();
     } catch (err) {
       setError(errorMessage(err));
@@ -610,10 +531,7 @@ function ApplyModal({ job, onClose, onDone }) {
   };
 
   return (
-    <Modal
-      title={`Apply for ${job.title}`}
-      onClose={onClose}
-    >
+    <Modal title={`Apply for ${job.title}`} onClose={onClose}>
       <form className="stack" onSubmit={submit}>
         <p>
           Company: <b>{job.company}</b>
@@ -627,16 +545,12 @@ function ApplyModal({ job, onClose, onDone }) {
             rows={5}
             maxLength={1000}
             value={coverNote}
-            onChange={(e) =>
-              setCoverNote(e.target.value)
-            }
+            onChange={(e) => setCoverNote(e.target.value)}
             placeholder="Explain why you are suitable..."
           />
         </label>
 
-        <small>
-          {coverNote.length}/1000 characters
-        </small>
+        <small>{coverNote.length}/1000 characters</small>
 
         <div className="row end">
           <button
@@ -646,11 +560,7 @@ function ApplyModal({ job, onClose, onDone }) {
           >
             Cancel
           </button>
-
-          <button
-            type="submit"
-            disabled={saving}
-          >
+          <button type="submit" disabled={saving}>
             <Send size={16} />
             {saving ? "Submitting..." : "Submit Application"}
           </button>
@@ -661,68 +571,8 @@ function ApplyModal({ job, onClose, onDone }) {
 }
 
 // ================================================
-// SMART MATCH CARD
-// ================================================
-
-function MatchCard({ match, applied, onApply }) {
-  const job = normalizeJob(
-    match.job || match.internship || {}
-  );
-
-  const score = Math.max(
-    0,
-    Math.min(100, Number(match.score) || 0)
-  );
-
-  return (
-    <div className="card match">
-      <div
-        className="ring"
-        style={{ "--p": `${score * 3.6}deg` }}
-      >
-        <b>{score}%</b>
-      </div>
-
-      <div>
-        <span className="status">
-          SKILL MATCH
-        </span>
-
-        <h3>{job.title}</h3>
-
-        <p>
-          {job.company} · {job.location}
-        </p>
-
-        <p>
-          Matched skills:
-        </p>
-
-        <Tags items={match.matchedSkills || []} />
-
-        {!!match.missingSkills?.length && (
-          <small>
-            Skills to develop:{" "}
-            {match.missingSkills.join(", ")}
-          </small>
-        )}
-
-        <div className="row">
-          <button
-            type="button"
-            disabled={applied || job.status !== "open"}
-            onClick={() => onApply(job)}
-          >
-            {applied ? "Applied" : "Apply Now"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ================================================
 // JOB SEEKER DASHBOARD
+// SMART MATCHING REMOVED
 // ================================================
 
 export default function JobSeeker() {
@@ -731,7 +581,6 @@ export default function JobSeeker() {
   const [profile, setProfile] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
-  const [matches, setMatches] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -758,14 +607,12 @@ export default function JobSeeker() {
       request("GET", "/profile"),
       request("GET", "/jobs"),
       request("GET", "/applications/mine"),
-      request("GET", "/matches/mine"),
     ]);
 
     const [
       profileResult,
       jobsResult,
       applicationsResult,
-      matchesResult,
     ] = results;
 
     if (profileResult.status === "fulfilled") {
@@ -774,8 +621,7 @@ export default function JobSeeker() {
 
     if (jobsResult.status === "fulfilled") {
       setJobs(
-        listOf(jobsResult.value, "jobs")
-          .map(normalizeJob)
+        listOf(jobsResult.value, "jobs").map(normalizeJob)
       );
     }
 
@@ -785,12 +631,6 @@ export default function JobSeeker() {
           applicationsResult.value,
           "applications"
         ).map(normalizeApplication)
-      );
-    }
-
-    if (matchesResult.status === "fulfilled") {
-      setMatches(
-        listOf(matchesResult.value, "matches")
       );
     }
 
@@ -832,7 +672,6 @@ export default function JobSeeker() {
         "PATCH",
         `/applications/${applicationId}/withdraw`
       );
-
       setNotice("Application withdrawn successfully.");
       await load();
     } catch (err) {
@@ -854,7 +693,6 @@ export default function JobSeeker() {
         "DELETE",
         `/applications/${applicationId}`
       );
-
       setNotice("Application deleted successfully.");
       await load();
     } catch (err) {
@@ -878,8 +716,7 @@ export default function JobSeeker() {
         .toLowerCase();
 
       return (
-        (!query ||
-          text.includes(query.toLowerCase())) &&
+        (!query || text.includes(query.toLowerCase())) &&
         (!location ||
           (job.location || "")
             .toLowerCase()
@@ -947,8 +784,8 @@ export default function JobSeeker() {
           </h1>
 
           <p>
-            Explore job opportunities, track your
-            applications and discover career matches.
+            Explore job opportunities, apply for jobs,
+            and track your applications.
           </p>
         </div>
 
@@ -1021,13 +858,11 @@ export default function JobSeeker() {
                   </span>
 
                   <h3>
-                    {app.internship?.title ||
-                      "Job"}
+                    {app.internship?.title || "Job"}
                   </h3>
 
                   <p>
-                    {app.internship?.company ||
-                      "Company"}
+                    {app.internship?.company || "Company"}
                   </p>
 
                   <small>
@@ -1062,9 +897,7 @@ export default function JobSeeker() {
                       <button
                         type="button"
                         className="secondary"
-                        onClick={() =>
-                          withdraw(app._id)
-                        }
+                        onClick={() => withdraw(app._id)}
                       >
                         <Undo2 size={16} />
                         Withdraw
@@ -1075,9 +908,7 @@ export default function JobSeeker() {
                       <button
                         type="button"
                         className="danger"
-                        onClick={() =>
-                          remove(app._id)
-                        }
+                        onClick={() => remove(app._id)}
                       >
                         <Trash2 size={16} />
                         Delete
@@ -1095,29 +926,7 @@ export default function JobSeeker() {
         )}
       </div>
 
-      <h2>Your Smart Matches</h2>
-
-      <div className="cards">
-        {matches.length ? (
-          matches.map((match) => {
-            const job = match.job || match.internship;
-            const jobId = job?._id || job?.id;
-
-            return (
-              <MatchCard
-                key={match._id || jobId}
-                match={match}
-                applied={appliedIds.includes(jobId)}
-                onApply={startApply}
-              />
-            );
-          })
-        ) : (
-          <Empty
-            message="No matching jobs found. Add skills to your profile to improve recommendations."
-          />
-        )}
-      </div>
+      {/* JOB EXPLORATION - NO SMART MATCHING */}
 
       <h2>Explore Open Jobs</h2>
 
@@ -1172,19 +981,11 @@ export default function JobSeeker() {
 
         <select
           value={sort}
-          onChange={(e) =>
-            setSort(e.target.value)
-          }
+          onChange={(e) => setSort(e.target.value)}
         >
-          <option value="newest">
-            Newest First
-          </option>
-          <option value="oldest">
-            Oldest First
-          </option>
-          <option value="title">
-            Title A-Z
-          </option>
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="title">Title A-Z</option>
         </select>
       </div>
 
@@ -1217,8 +1018,7 @@ export default function JobSeeker() {
                 <h3>{job.title}</h3>
 
                 <p>
-                  <MapPin size={14} />
-                  {" "}
+                  <MapPin size={14} />{" "}
                   {job.company} ·{" "}
                   {job.location || "Not specified"}
                 </p>
