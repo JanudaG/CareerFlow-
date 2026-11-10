@@ -1,0 +1,799 @@
+
+/* ==========================================================
+   CAREERFLOW DASHBOARD
+   SkillMatch-inspired design — Purple & White
+   ========================================================== */
+
+:root {
+  --dashboard-purple: #6d28d9;
+  --dashboard-purple-dark: #4c1d95;
+  --dashboard-purple-light: #ede9fe;
+  --dashboard-bg: #f8f7fc;
+  --dashboard-white: #ffffff;
+  --dashboard-text: #211a3d;
+  --dashboard-muted: #706985;
+  --dashboard-border: #e7e1f1;
+  --dashboard-shadow: 0 6px 24px rgba(50, 25, 100, 0.07);
+}
+
+/* MAIN DASHBOARD */
+
+.dashboard,
+.dashboard-container,
+.company-dashboard,
+.jobseeker-dashboard,
+.employer-dashboard,
+.cf-skillmatch {
+  width: 100%;
+  min-height: 100vh;
+  background: var(--dashboard-bg);
+  color: var(--dashboard-text);
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  box-sizing: border-box;
+}
+
+.dashboard *,
+.dashboard-container *,
+.company-dashboard *,
+.jobseeker-dashboard *,
+.employer-dashboard *,
+.cf-skillmatch * {
+  box-sizing: border-box;
+}
+
+/* CONTENT WRAPPERS */
+
+.dashboard-content,
+.dashboard-main,
+.dashboard-container,
+.company-dashboard,
+.jobseeker-dashboard,
+.employer-dashboard,
+.cf-skillmatch.wrap {
+  max-width: 1440px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 36px 44px 70px;
+}
+
+/* HEADINGS */
+
+.dashboard h1,
+.company-dashboard h1,
+.jobseeker-dashboard h1,
+.employer-dashboard h1,
+.cf-skillmatch h1 {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.7px;
+  color: var(--dashboard-text);
+}
+
+.dashboard h2,
+.company-dashboard h2,
+.jobseeker-dashboard h2,
+.employer-dashboard h2,
+.cf-skillmatch h2 {
+  font-size: 22px;
+  font-weight: 750;
+  margin: 30px 0 16px;
+  color: var(--dashboard-text);
+}
+
+.dashboard h3,
+.company-dashboard h3,
+.jobseeker-dashboard h3,
+.employer-dashboard h3,
+.cf-skillmatch h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--dashboard-text);
+}
+
+.dashboard p,
+.company-dashboard p,
+.jobseeker-dashboard p,
+.employer-dashboard p,
+.cf-skillmatch p {
+  color: var(--dashboard-muted);
+  line-height: 1.65;
+}
+
+/* WELCOME / HERO */
+
+.dashboard-header,
+.dashboard-hero,
+.welcome-section,
+.welcome-banner,
+.cf-skillmatch .welcome {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 32px 36px;
+  margin-bottom: 28px;
+  border: 1px solid #e3d8f8;
+  border-radius: 20px;
+  background: linear-gradient(
+    115deg,
+    #ffffff 0%,
+    #f7f3ff 58%,
+    #ede9fe 100%
+  );
+}
+
+.dashboard-header h1,
+.dashboard-hero h1,
+.welcome-section h1,
+.welcome-banner h1 {
+  margin: 8px 0;
+}
+
+/* CARDS */
+
+.dashboard .card,
+.company-dashboard .card,
+.jobseeker-dashboard .card,
+.employer-dashboard .card,
+.cf-skillmatch .card,
+.stat-card,
+.stats-card,
+.job-card,
+.job-listing-card,
+.application-card,
+.match-card,
+.filter-card,
+.profile-card {
+  background: #ffffff;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 16px;
+  padding: 22px;
+  box-shadow: var(--dashboard-shadow);
+}
+
+/* STATISTICS */
+
+.stats-grid,
+.dashboard-stats,
+.stats-container,
+.statistics-grid,
+.cf-skillmatch .stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: 24px 0 30px;
+}
+
+.stat-card,
+.stats-card,
+.cf-skillmatch .stat {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  position: relative;
+  padding: 26px 28px;
+}
+
+.stat-card::before,
+.stats-card::before,
+.cf-skillmatch .stat::before {
+  content: "";
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  left: 0;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--dashboard-purple);
+}
+
+.stat-number,
+.stat-value,
+.cf-skillmatch .stat b {
+  font-size: 31px;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--dashboard-text);
+}
+
+.stat-label,
+.cf-skillmatch .stat span {
+  font-size: 13px;
+  color: var(--dashboard-muted);
+}
+
+/* BUTTONS */
+
+.dashboard button,
+.company-dashboard button,
+.jobseeker-dashboard button,
+.employer-dashboard button,
+.cf-skillmatch button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 10px 17px;
+  border-radius: 9px;
+  border: 1px solid var(--dashboard-purple);
+  background: var(--dashboard-purple);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.dashboard button:hover:not(:disabled),
+.company-dashboard button:hover:not(:disabled),
+.jobseeker-dashboard button:hover:not(:disabled),
+.employer-dashboard button:hover:not(:disabled),
+.cf-skillmatch button:hover:not(:disabled) {
+  background: var(--dashboard-purple-dark);
+  transform: translateY(-1px);
+}
+
+.dashboard button:disabled,
+.company-dashboard button:disabled,
+.jobseeker-dashboard button:disabled,
+.employer-dashboard button:disabled,
+.cf-skillmatch button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary,
+.secondary,
+.cf-skillmatch button.secondary {
+  background: #ffffff !important;
+  color: var(--dashboard-purple) !important;
+  border: 1px solid #d9c9f5 !important;
+}
+
+.btn-secondary:hover,
+.secondary:hover,
+.cf-skillmatch button.secondary:hover {
+  background: #f3edff !important;
+}
+
+.btn-danger,
+.danger,
+.cf-skillmatch button.danger {
+  background: #fff1f2 !important;
+  color: #dc2626 !important;
+  border-color: #fecdd3 !important;
+}
+
+/* FORMS */
+
+.dashboard input,
+.dashboard select,
+.dashboard textarea,
+.company-dashboard input,
+.company-dashboard select,
+.company-dashboard textarea,
+.jobseeker-dashboard input,
+.jobseeker-dashboard select,
+.jobseeker-dashboard textarea,
+.employer-dashboard input,
+.employer-dashboard select,
+.employer-dashboard textarea,
+.cf-skillmatch input,
+.cf-skillmatch select,
+.cf-skillmatch textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 43px;
+  padding: 10px 13px;
+  border: 1px solid #ddd6eb;
+  border-radius: 9px;
+  background: #ffffff;
+  color: var(--dashboard-text);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+
+.dashboard input:focus,
+.dashboard select:focus,
+.dashboard textarea:focus,
+.company-dashboard input:focus,
+.company-dashboard select:focus,
+.company-dashboard textarea:focus,
+.jobseeker-dashboard input:focus,
+.jobseeker-dashboard select:focus,
+.jobseeker-dashboard textarea:focus,
+.employer-dashboard input:focus,
+.employer-dashboard select:focus,
+.employer-dashboard textarea:focus,
+.cf-skillmatch input:focus,
+.cf-skillmatch select:focus,
+.cf-skillmatch textarea:focus {
+  border-color: var(--dashboard-purple);
+  box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.1);
+}
+
+.dashboard textarea,
+.company-dashboard textarea,
+.jobseeker-dashboard textarea,
+.employer-dashboard textarea,
+.cf-skillmatch textarea {
+  resize: vertical;
+  min-height: 95px;
+}
+
+.form-grid,
+.formgrid,
+.cf-skillmatch .formgrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+/* FILTERS */
+
+.job-filters,
+.filter-section,
+.filters-container,
+.cf-skillmatch .filters {
+  display: grid;
+  grid-template-columns: minmax(200px, 2fr) repeat(4, minmax(110px, 1fr));
+  gap: 12px;
+  padding: 18px;
+  background: white;
+  border: 1px solid var(--dashboard-border);
+  border-radius: 14px;
+  margin-bottom: 20px;
+}
+
+.cf-skillmatch .searchbox {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.cf-skillmatch .searchbox svg {
+  position: absolute;
+  left: 13px;
+  color: #8875ab;
+}
+
+.cf-skillmatch .searchbox input {
+  padding-left: 40px;
+}
+
+/* JOB LISTINGS */
+
+.jobs-grid,
+.job-grid,
+.job-listings-grid,
+.cf-skillmatch .cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.job-card,
+.job-listing-card,
+.cf-skillmatch .jobcard {
+  display: flex;
+  flex-direction: column;
+  min-height: 280px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.job-card:hover,
+.job-listing-card:hover,
+.cf-skillmatch .jobcard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 32px rgba(74, 36, 130, 0.1);
+}
+
+.job-card h3,
+.job-listing-card h3,
+.cf-skillmatch .jobcard h3 {
+  margin: 14px 0 8px;
+}
+
+.job-actions,
+.card-actions,
+.cf-skillmatch .jobactions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: auto;
+  padding-top: 20px;
+}
+
+/* TAGS */
+
+.skill-tags,
+.tags,
+.cf-skillmatch .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 12px 0;
+}
+
+.skill-tag,
+.tag,
+.cf-skillmatch .tags > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border: 1px solid #e5d9fb;
+  border-radius: 7px;
+  background: #f1eaff;
+  color: #6431b2;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.cf-skillmatch .tags.editable button {
+  width: 23px;
+  height: 23px;
+  min-height: 23px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--dashboard-purple);
+}
+
+/* STATUS */
+
+.status,
+.status-badge,
+.cf-skillmatch .status {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: #ede9fe;
+  color: #6d28d9;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.status-open,
+.status-offered,
+.status-active {
+  background: #dcfce7 !important;
+  color: #15803d !important;
+}
+
+.status-closed,
+.status-rejected,
+.status-withdrawn {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+}
+
+.status-interview {
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+}
+
+.status-shortlisted {
+  background: #e0f2fe !important;
+  color: #0369a1 !important;
+}
+
+/* APPLICATION TRACKER */
+
+.application-tracker,
+.cf-skillmatch .tracker {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cf-skillmatch .application {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  align-items: center;
+  gap: 24px;
+}
+
+.cf-skillmatch .stagebar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.cf-skillmatch .stagebar i {
+  flex: 1;
+  height: 7px;
+  border-radius: 6px;
+  background: #e9e5f2;
+}
+
+.cf-skillmatch .stagebar i.done {
+  background: linear-gradient(90deg, #7c3aed, #a78bfa);
+}
+
+/* MATCHING SCORE */
+
+.cf-skillmatch .match {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.cf-skillmatch .ring {
+  --p: 0deg;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--dashboard-purple) var(--p),
+    #e9e5f2 var(--p)
+  );
+}
+
+.cf-skillmatch .ring::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: white;
+}
+
+.cf-skillmatch .ring b {
+  position: relative;
+  z-index: 1;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* TABLE */
+
+.cf-skillmatch .table {
+  overflow-x: auto;
+  padding: 0;
+}
+
+.cf-skillmatch .tr {
+  display: grid;
+  gap: 20px;
+  align-items: center;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.cf-skillmatch .apptr {
+  grid-template-columns: 1.3fr 1.2fr 0.8fr 1fr;
+  min-width: 720px;
+}
+
+.cf-skillmatch .tr.th {
+  background: #f8f6fe;
+  color: #65577d;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.cf-skillmatch .tr span b,
+.cf-skillmatch .tr span small {
+  display: block;
+}
+
+/* MODALS */
+
+.cf-skillmatch .overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(24, 14, 47, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.cf-skillmatch .modal {
+  width: min(100%, 720px);
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 28px;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 25px 70px rgba(25, 14, 55, 0.2);
+}
+
+.cf-skillmatch .modalhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding-bottom: 18px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--dashboard-border);
+}
+
+.cf-skillmatch .detailgrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.cf-skillmatch .detailgrid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 14px;
+  border-radius: 9px;
+  background: #f8f6fe;
+}
+
+/* UTILITY */
+
+.cf-skillmatch .row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.cf-skillmatch .row.between {
+  justify-content: space-between;
+}
+
+.cf-skillmatch .row.end {
+  justify-content: flex-end;
+}
+
+.cf-skillmatch .stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.cf-skillmatch .empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+  text-align: center;
+  gap: 12px;
+}
+
+.cf-skillmatch .pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin: 15px 0;
+}
+
+.cf-skillmatch .prewrap {
+  white-space: pre-wrap;
+}
+
+.cf-skillmatch .clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+}
+
+.cf-skillmatch .error {
+  padding: 14px;
+  border-radius: 9px;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.cf-skillmatch .toast,
+.cf-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 1200;
+  padding: 14px 20px;
+  border-radius: 10px;
+  background: #4c1d95;
+  color: white;
+  box-shadow: var(--dashboard-shadow);
+}
+
+.cf-toast.error,
+.cf-skillmatch .toast.error {
+  background: #b91c1c;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1100px) {
+  .dashboard-content,
+  .dashboard-main,
+  .company-dashboard,
+  .jobseeker-dashboard,
+  .employer-dashboard,
+  .cf-skillmatch.wrap {
+    padding: 28px 25px 60px;
+  }
+
+  .jobs-grid,
+  .job-grid,
+  .job-listings-grid,
+  .cf-skillmatch .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .job-filters,
+  .filter-section,
+  .filters-container,
+  .cf-skillmatch .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .dashboard-content,
+  .dashboard-main,
+  .company-dashboard,
+  .jobseeker-dashboard,
+  .employer-dashboard,
+  .cf-skillmatch.wrap {
+    padding: 18px 15px 45px;
+  }
+
+  .dashboard-header,
+  .dashboard-hero,
+  .welcome-section,
+  .welcome-banner,
+  .cf-skillmatch .welcome {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 24px 20px;
+  }
+
+  .stats-grid,
+  .dashboard-stats,
+  .stats-container,
+  .statistics-grid,
+  .cf-skillmatch .stats,
+  .jobs-grid,
+  .job-grid,
+  .job-listings-grid,
+  .cf-skillmatch .cards,
+  .job-filters,
+  .filter-section,
+  .filters-container,
+  .cf-skillmatch .filters,
+  .form-grid,
+  .formgrid,
+  .cf-skillmatch .formgrid {
+    grid-template-columns: 1fr;
+  }
+
+  .cf-skillmatch .application,
+  .cf-skillmatch .detailgrid {
+    grid-template-columns: 1fr;
+  }
+
+  .cf-skillmatch .modal {
+    padding: 20px;
+  }
+
+  .cf-skillmatch .pagination {
+    flex-wrap: wrap;
+  }
+}

@@ -1,0 +1,29 @@
+name: Verify CareerFlow
+on:
+  push:
+    branches: [main, feature/complete-core-job-workflows]
+  pull_request:
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
+  backend-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check backend JavaScript syntax
+        run: |
+          find backend -name "*.js" -not -path "*/node_modules/*" -print0 | xargs -0 -n1 node --check

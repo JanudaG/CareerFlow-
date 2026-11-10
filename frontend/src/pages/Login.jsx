@@ -1,5 +1,6 @@
+
 import React, { useState } from "react";
-import axios from "axios";
+import { api } from "../lib/api";
 import { Link, useNavigate } from "react-router-dom";
 import "./Login.css";
 
@@ -10,74 +11,72 @@ function Login() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  
   const handleLogin = async (event) => {
     event.preventDefault();
+
     setError("");
-   try {
+    setLoading(true);
 
-    const response = await axios.post(
-      "http://localhost:5000/api/auth/login",
-      {
-        email,
-        password
+    try {
+      const response = await api.post("/auth/login", {
+        email: email.trim(),
+        password,
+      });
+
+      const { token, user } = response.data;
+
+      if (!token || !user?.role) {
+        throw new Error("Invalid login response");
       }
-    );
 
+      const routes = {
+        jobseeker: "/job-seeker",
+        employer: "/company",
+        admin: "/admin",
+      };
 
-    // Save JWT token
-    localStorage.setItem(
-      "token",
-      response.data.token
-    );
+      const destination = routes[user.role];
 
+      if (!destination) {
+        setError("Unknown account role");
+        return;
+      }
 
-    // Save user information
-    localStorage.setItem(
-      "user",
-      JSON.stringify(response.data.user)
-    );
+      // Store authenticated session
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
 
+      // Redirect based on authenticated role
+      navigate(destination, { replace: true });
 
-    const user = response.data.user;
-
-
-    if (user.role === "jobseeker") {
-      navigate("/jobseeker");
-    } 
-    
-    else if (user.role === "employer") {
-      navigate("/company");
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+        err.message ||
+        "Login failed. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
-
-
-  } catch (error) {
-
-    setError(
-      error.response?.data?.message ||
-      "Login failed"
-    );
-
-   }
-    
-    
   };
 
   const handleSocialLogin = (provider) => {
     if (!role) {
-      setError(`Please select a role before using ${provider}.`);
+      setError(
+        `Please select a role before using ${provider}.`
+      );
       return;
     }
 
     setError(
-      `${provider} login will be connected to the backend later.`
+      `${provider} login is not available yet.`
     );
   };
 
   return (
     <div className="login-page">
-
       <div className="login-container">
 
         <div className="login-header">
@@ -94,28 +93,38 @@ function Login() {
           className="login-form"
           onSubmit={handleLogin}
         >
-          <label>Email Address</label>
+          <label htmlFor="login-email">
+            Email Address
+          </label>
 
           <input
+            id="login-email"
             type="email"
             placeholder="Enter your email"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={(event) =>
+              setEmail(event.target.value)
+            }
             required
           />
 
-          <label>Password</label>
+          <label htmlFor="login-password">
+            Password
+          </label>
 
           <input
+            id="login-password"
             type="password"
             placeholder="Enter your password"
             value={password}
-            onChange={(event) => setPassword(event.target.value)}
+            onChange={(event) =>
+              setPassword(event.target.value)
+            }
             required
           />
 
           {error && (
-            <div className="login-error">
+            <div className="login-error" role="alert">
               {error}
             </div>
           )}
@@ -123,45 +132,15 @@ function Login() {
           <button
             type="submit"
             className="login-submit-button"
+            disabled={loading}
           >
-            Login to CareerFlow 🚀
+            {loading
+              ? "Logging in..."
+              : "Login to CareerFlow 🚀"}
           </button>
         </form>
 
-        <div className="social-divider">
-          Or continue with
-        </div>
-
-        <div className="social-register-role">
-          <label>Select Role for Login</label>
-
-          <select
-            value={role}
-            onChange={(event) => setRole(event.target.value)}
-          >
-            <option value="">Select your role</option>
-
-            <option value="jobseeker">Job Seeker</option>
-            <option value="employer">Company</option>
-          </select>
-        </div>
-
-        <div className="social-buttons">
-          <button
-            className="social-button"
-            onClick={() => handleSocialLogin("Google")}
-          >
-            🔵 Google
-          </button>
-
-          <button
-            className="social-button"
-            onClick={() => handleSocialLogin("Facebook")}
-          >
-            🔷 Facebook
-          </button>
-        </div>
-
+      
         <div className="login-register-link">
           Don't have an account?{" "}
           <Link to="/register">
@@ -172,7 +151,6 @@ function Login() {
       </div>
     </div>
   );
-
 }
 
 export default Login;

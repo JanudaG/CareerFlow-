@@ -170,39 +170,6 @@ function Register() {
           </button>
         </form>
 
-        <div className="register-social-title">
-          Or register with
-        </div>
-
-        <div className="social-register-role">
-          <label>Select Role for Registration</label>
-
-          <select
-            value={socialRole}
-            onChange={(event) => setSocialRole(event.target.value)}
-          >
-            <option value="">Select your role</option>
-            <option value="jobseeker">Job Seeker</option>
-            <option value="employer">Company</option>
-          </select>
-        </div>
-
-        <div className="register-social-buttons">
-          <button
-            className="register-social-button"
-            onClick={() => handleSocialRegister("Google")}
-          >
-            🔵 Google
-          </button>
-
-          <button
-            className="register-social-button"
-            onClick={() => handleSocialRegister("Facebook")}
-          >
-            🔷 Facebook
-          </button>
-        </div>
-
         <div className="register-login-link">
           Already have an account?{" "}
           <Link to="/login">
